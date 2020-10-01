@@ -2,13 +2,23 @@ import os
 import secrets
 from PIL import Image
 from flask import render_template, url_for, flash, redirect, request, abort
-from recblog import app, db, bcrypt, mail
+from recblog import app, db, bcrypt, mail, admin
 from recblog.forms import RegistrationForm, LoginForm, PostForm, UpdateUserForm, RequestResetForm, ResetPasswordForm
-from recblog.models import User, Post
+from recblog.models import User, Post, Permission
 from flask_login import login_user, current_user, logout_user, login_required
 from recblog.picture_handler import add_profile_pic
-from recblog.utils import send_reset_email
+from recblog.utils import send_reset_email, send_confirmation_email
+from flask_admin.contrib.sqla import ModelView
+from recblog.decorators import admin_required, permission_required
 
+
+## later replace with app.app_context_processor
+@app.context_processor
+def inject_permissions():
+    return dict(Permission=Permission)
+
+admin.add_view(ModelView(User, db.session))
+admin.add_view(ModelView(Post, db.session))
 
 
 
@@ -40,7 +50,10 @@ def register():
         user = User(username=form.username.data, email=form.email.data, password=hashed_password)
         db.session.add(user)
         db.session.commit()
-        flash(f'Account created for {form.username.data}!', 'success')
+        token = user.generate_confirmation_token()
+        send_confirmation_email(user.email, 'Confirm Your Account with Recipes', 'confirm_registration', user=user, token=token)
+        flash(f'Account created for {form.username.data}! Confirmation email was send to your registered email', 'success')
+
         return redirect(url_for('login'))
     return render_template('register.html', title='Register', form=form)
 
@@ -94,7 +107,7 @@ def user_posts(username):
     user = User.query.filter_by(username=username).first_or_404()
     posts = Post.query.filter_by(author=user)\
         .order_by(Post.date_posted.desc())\
-        .paginate(page=page, per_page=5)
+        .paginate(page=page, per_page=8)
     return render_template('user_posts.html', posts=posts, user=user)
 
 
@@ -128,6 +141,44 @@ def reset_token(token):
         return redirect(url_for('login'))
     return render_template('reset_token.html', title='Reset Password', form=form)
 
+@app.route('/confirm/<token>')
+@login_required
+def confirm_registration_token(token):
+    if current_user.confirmed:
+        return redirect(url_for('home'))
+    if current_user.confirm_user_registration(token):
+        db.session.commit()
+        flash("You have confirmed your account. Welcome to the Delicious Life!", 'success')
+    else:
+        flash("The confirmation link is expired or not valid. Please, contact site administrator via Contact Form.")
+    return redirect(url_for('home'))
+
+
+## replace with Blueprints with app.before_app_request
+@app.before_request
+def before_request():
+    if current_user.is_authenticated and not current_user.confirmed:
+        ## add after blueprints  - and request.blueprint != 'auth' and request.endpoint != 'static':
+        return redirect(url_for('unconfirmed'))
+
+
+@app.route('/unconfirmed')
+def unconfirmed():
+    if current_user.is_anonymus or current_user.confirmed:
+        return redirect(url_for('home'))
+    return render_template('unconfirmed.html', user=current_user)
+
+
+@app.route('/confirm')
+@login_required
+def resend_confirmation():
+    confirmation_token = current_user.generate_confirmation_token()
+    send_confirmation_email(current_user.email, 'Confirm Your Account', user=current_user, token=confirmation_token)
+    flash("A new confirmation email has been sent to you by email. "
+          "Please follow instructions from email to confirm your account.", 'success')
+    return redirect(url_for('home'))
+
+
 
 def save_picture(form_picture):
     random_hex = secrets.token_hex(8)
@@ -141,6 +192,8 @@ def save_picture(form_picture):
     i.save(picture_path)
 
     return picture_fn
+
+
 
 
 @app.route("/post/new", methods=['GET', 'POST'])
@@ -226,19 +279,22 @@ def delete_post(post_id):
 @app.route('/recent_recipes')
 def recent_recipes():
     page = request.args.get('page', 1, type=int)
-    posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=20)
-    rec_posts = []
-    row = []
-    for post in posts.items:
-        if len(row) < 4:
-            row.append(post)
-        if len(row) == 4:
-            rec_posts.append(row)
-            row = []
-    rec_posts.append(row)
+    rec_posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=4)
+    return render_template('recent_recipes.html', title='Recent Recipes', rec_posts=rec_posts)
 
 
-    return render_template('recent_recipes.html', title='Recent Recipes', rec_posts=rec_posts, posts=posts)
+@app.route('/admin')
+@login_required
+@admin_required
+def for_admins_only():
+    return "For admins only!"
+
+
+@app.route('/moderate')
+@login_required
+@permission_required(Permission.MODERATE)
+def for_moderators_only():
+    return "For comments moderators!"
 
 
 

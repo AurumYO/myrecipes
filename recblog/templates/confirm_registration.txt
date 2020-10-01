@@ -1,0 +1,13 @@
+Dear {{ user.username }},
+
+Welcome to Yura's Delicious Life Blog!
+
+To confirm your account, please clilck on the following link:
+
+{{ url_for('confirm_account', token=token, _external=True }}
+
+Sincerely,
+
+Delicious Life Blog Team.
+
+Note: replies to this email adress are not monitored.
