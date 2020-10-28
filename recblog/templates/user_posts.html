@@ -8,11 +8,11 @@
             <div class="card-deck">
 
                   <div class="card">
-                    <a href="{{ url_for('post', post_id=post.id) }}">
+                    <a href="{{ url_for('posts.post', post_id=post.id) }}">
                       <img src="{{ url_for('static', filename='post_pictures/' + post.post_image) }}" class="card-img-top" alt="...">
                     </a>
                     <div class="card-body">
-                      <h5 class="card-title"><a href="{{ url_for('post', post_id=post.id) }}">{{ post.title }}</a></h5>
+                      <h5 class="card-title"><a href="{{ url_for('posts.post', post_id=post.id) }}">{{ post.title }}</a></h5>
                       <p class="card-text">{{ post.description[:100] }}</p>
                     </div>
                     <div class="card-footer">
@@ -27,9 +27,9 @@
     {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
         {% if page_num %}
             {% if rec_posts.page == page_num %}
-                <a class="btn btn-info mb-4" href="{{ url_for('user_posts', username=user.username, page=page_num) }}">{{ page_num }}</a>
+                <a class="btn btn-info mb-4" href="{{ url_for('users.user_posts', username=user.username, page=page_num) }}">{{ page_num }}</a>
             {% else %}
-                <a class="btn btn-outline-info mb-4" href="{{ url_for('user_posts', username=user.username, page=page_num) }}">{{ page_num }}</a>
+                <a class="btn btn-outline-info mb-4" href="{{ url_for('users.user_posts', username=user.username, page=page_num) }}">{{ page_num }}</a>
             {% endif %}
         {% else %}
             ...

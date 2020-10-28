@@ -2,12 +2,12 @@ Dear {{ user.username }},
 
 Welcome to Yura's Delicious Life Blog!
 
-To confirm your account, please clilck on the following link:
+To confirm your account, please click on the following link:
 
-{{ url_for('confirm_account', token=token, _external=True }}
+{{ url_for('users.confirm_registration_token', token=token, _external=True) }}
 
 Sincerely,
 
 Delicious Life Blog Team.
 
-Note: replies to this email adress are not monitored.
+Note: replies to this email address are not monitored.

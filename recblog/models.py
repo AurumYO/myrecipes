@@ -1,8 +1,8 @@
 from datetime import datetime
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from recblog import db, login_manager, app
+from flask import current_app
+from recblog import db, login_manager
 from flask_login import UserMixin, AnonymousUserMixin
-from flask_admin.contrib.sqla import ModelView
 
 
 @login_manager.user_loader
@@ -30,7 +30,6 @@ class Role(db.Model):
         super(Role, self).__init__(**kwargs)
         if self.permissions is None:
             self.permissions = 0
-
 
     def add_permission(self, perm):
         if not self.has_permission(perm):
@@ -79,7 +78,7 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(20), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     image_file = db.Column(db.String(20), nullable=False, default='default.jpg')
-    password = db.Column(db.String(60), nullable=False)
+    password = db.Column(db.String(0), nullable=False)
     posts = db.relationship('Post', backref='author', lazy=True)
     confirmed = db.Column(db.Boolean, default=False)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
@@ -87,7 +86,7 @@ class User(db.Model, UserMixin):
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
         if self.role is None:
-            if self.email == app.config['FLASKY_ADMIN']:
+            if self.email == current_app.config['FLASKY_ADMIN']:
                 self.role = Role.query.filter_by(name='Administrator').first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
@@ -102,17 +101,17 @@ class User(db.Model, UserMixin):
 
 
     def generate_confirmation_token(self, expires_sec=3600):
-        s = Serializer(app.config['SECRET_KEY'], expires_sec)
+        s = Serializer(current_app.config['SECRET_KEY'], expires_sec)
         return s.dumps({'confirm': self.id}).decode('utf-8')
 
     def get_reset_token(self, expires_sec=3600):
-        s = Serializer(app.config['SECRET_KEY'], expires_sec)
+        s = Serializer(current_app.config['SECRET_KEY'], expires_sec)
         return s.dumps({'user_id': self.id}).decode('utf-8')
 
 
     @staticmethod
     def confirm_user_registration(self, token):
-        s = Serializer(app.config['SECRET_KEY'])
+        s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token.encode('utf-8'))
         except:
@@ -126,7 +125,7 @@ class User(db.Model, UserMixin):
 
     @staticmethod
     def verify_reset_token(token):
-        s = Serializer(app.config['SECRET_KEY'])
+        s = Serializer(current_app.config['SECRET_KEY'])
         try:
             user_id = s.loads(token)['user_id']
         except:

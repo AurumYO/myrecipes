@@ -8,13 +8,13 @@
     <!-- Cards with Newest Recipes -->
     <div class="content-section">
         <!-- Pagination of the Latest Posts Section -->
-        <h2><a href="{{ url_for('recent_recipes') }}">Newest recipes</a></h2>
+        <h2><a href="{{ url_for('posts.recent_recipes') }}">Newest recipes</a></h2>
         {% for page_num in latest_posts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
             {% if page_num %}
                 {% if latest_posts.page == page_num %}
-                    <a class="btn btn-info mb-4" href="{{ url_for('home', page=page_num) }}">{{ page_num }}</a>
+                    <a class="btn btn-info mb-4" href="{{ url_for('main.home', page=page_num) }}">{{ page_num }}</a>
                 {% else %}
-                    <a class="btn btn-outline-info mb-4" href="{{ url_for('home', page=page_num) }}">{{ page_num }}</a>
+                    <a class="btn btn-outline-info mb-4" href="{{ url_for('main.home', page=page_num) }}">{{ page_num }}</a>
                 {% endif%}
             {% else %}
                 ...
@@ -26,7 +26,7 @@
             <div class="card">
                 <img src="{{ url_for('static', filename='post_pictures/' + latest_post.post_image) }}" class="card-img-top" alt="...">
                 <div class="card-body">
-                    <h5 class="card-title"><a href="{{ url_for('post', post_id=latest_post.id) }}">{{ latest_post.title}}</a></h5>
+                    <h5 class="card-title"><a href="{{ url_for('posts.post', post_id=latest_post.id) }}">{{ latest_post.title}}</a></h5>
                     <p class="card-text">{{ latest_post.description }}</p>
                 </div>
                 <div class="card-footer">
@@ -48,7 +48,7 @@
             <div class="card">
                 <img src="{{ url_for('static', filename='post_pictures/' + post.post_image) }}" class="card-img-top" alt="...">
                 <div class="card-body">
-                    <h5 class="card-title"><a href="{{ url_for('post', post_id=post.id) }}">{{ post.title}}</a></h5>
+                    <h5 class="card-title"><a href="{{ url_for('posts.post', post_id=post.id) }}">{{ post.title}}</a></h5>
                     <p class="card-text">{{ post.description }}</p>
                 </div>
                 <div class="card-footer">
