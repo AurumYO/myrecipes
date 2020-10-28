@@ -51,7 +51,7 @@ def create_app(config_class=Config):
 
     from recblog.users.routes import users
     from recblog.posts.routes import posts
-    from recblog.admins.routes import admins
+    from recblog.admins_page.routes import admins
     from recblog.errors.routes import errors
     from recblog.main.routes import main
     app.register_blueprint(users)
