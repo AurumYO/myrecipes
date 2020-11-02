@@ -1,8 +1,6 @@
-from flask import render_template, request, Blueprint
-from recblog.models import Post
-
-
-main = Blueprint('main', __name__)
+from flask import request, render_template
+from . import main
+from ..models import Post
 
 
 @main.route('/')

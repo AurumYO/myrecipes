@@ -1,13 +1,8 @@
 from datetime import datetime
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from flask import current_app
-from recblog import db, login_manager
+from flask import current_app, request, url_for
 from flask_login import UserMixin, AnonymousUserMixin
-
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+from . import db, login_manager
 
 
 class Permission:
@@ -31,6 +26,28 @@ class Role(db.Model):
         if self.permissions is None:
             self.permissions = 0
 
+    @staticmethod
+    def insert_roles():
+        roles = {
+            'User': [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE],
+            'Moderator': [Permission.FOLLOW, Permission.COMMENT,
+                          Permission.WRITE, Permission.MODERATE],
+            'Administrator': [Permission.FOLLOW, Permission.COMMENT,
+                              Permission.WRITE, Permission.MODERATE,
+                              Permission.ADMIN],
+        }
+        default_role = 'User'
+        for r in roles:
+            role = Role.query.filter_by(name=r).first()
+            if role is None:
+                role = Role(name=r)
+            role.reset_permissions()
+            for perm in roles[r]:
+                role.add_permission(perm)
+            role.default = (role.name == default_role)
+            db.session.add(role)
+        db.session.commit()
+
     def add_permission(self, perm):
         if not self.has_permission(perm):
             self.permissions += perm
@@ -46,42 +63,46 @@ class Role(db.Model):
         return self.permissions & perm == perm
 
     def __repr__(self):
-        return f"""<Role {self.name}"""
+        return f"""Role {self.name}"""
 
 
-
-    @staticmethod
-    def insert_roles():
-        roles = {
-            'User': [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE],
-            'Moderator': [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE, Permission.MODERATE],
-            'Administrator': [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE, Permission.MODERATE,
-                              Permission.ADMIN],
-        }
-        default_role = 'User'
-        for r in roles:
-            role = Role.query.filter_by(name=r).first()
-            if role is None:
-                role = Role(name=r)
-            role.reset_permissions()
-            for perm in roles[r]:
-                role.add_permission(perm)
-            role.default = (role.name == default_role)
-            db.session.add(role)
-        db.session.commit()
-
+class Follow(db.Model):
+    __tablename__ = 'follows'
+    follower_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
+    followed_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class User(db.Model, UserMixin):
-
+    __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     image_file = db.Column(db.String(20), nullable=False, default='default.jpg')
-    password = db.Column(db.String(0), nullable=False)
+    password = db.Column(db.String(60), nullable=False)
     posts = db.relationship('Post', backref='author', lazy=True)
     confirmed = db.Column(db.Boolean, default=False)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+    location = db.Column(db.String())
+    about_me = db.Column(db.Text)
+    last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
+    followed = db.relationship('Follow', foreign_keys=[Follow.follower_id],
+                               backref=db.backref('follower', lazy='joined'),
+                               lazy='dynamic', cascade='all, delete-orphan')
+    follower = db.relationship('Follow', foreign_keys=[Follow.followed_id],
+                               backref=db.backref('followed', lazy='joined'),
+                               lazy='dynamic', cascade='all, delete-orphan')
+    # comments = db.relationship('Comment', backref='author', lazy='dynamic')
+
+    @staticmethod
+    def add_self_follower():
+        for user in User.query.all():
+            if not user.is_following(user):
+                user.follow(user)
+                db.session.add(user)
+                db.session.commit()
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -90,15 +111,10 @@ class User(db.Model, UserMixin):
                 self.role = Role.query.filter_by(name='Administrator').first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
+        self.follow_user(self)
 
-
-
-    def can(self, perm):
-        return self.role is not None and self.role.has_permission(perm)
-
-    def is_administrator(self):
-        return self.can(Permission.ADMIN)
-
+    def __repr__(self):
+        return f"""User('{self.username}', '{self.email}', '{self.image_file}')"""
 
     def generate_confirmation_token(self, expires_sec=3600):
         s = Serializer(current_app.config['SECRET_KEY'], expires_sec)
@@ -108,9 +124,7 @@ class User(db.Model, UserMixin):
         s = Serializer(current_app.config['SECRET_KEY'], expires_sec)
         return s.dumps({'user_id': self.id}).decode('utf-8')
 
-
-    @staticmethod
-    def confirm_user_registration(self, token):
+    def confirm(self, token):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token.encode('utf-8'))
@@ -122,6 +136,16 @@ class User(db.Model, UserMixin):
         db.session.add(self)
         return True
 
+    def can(self, perm):
+        return self.role is not None and self.role.has_permission(perm)
+
+    def is_administrator(self):
+        return self.can(Permission.ADMIN)
+
+    def ping(self):
+        self.last_seen = datetime.utcnow()
+        db.session.add(self)
+        db.session.commit()
 
     @staticmethod
     def verify_reset_token(token):
@@ -132,8 +156,25 @@ class User(db.Model, UserMixin):
             return None
         return User.query.get(user_id)
 
-    def __repr__(self):
-        return f"""User('{self.username}', '{self.email}', '{self.image_file}')"""
+    def follow_user(self, user):
+        if not self.is_following_user(user):
+            follow = Follow(follower=self, followed=user)
+            db.session.add(follow)
+
+    def stop_follow_user(self, user):
+        follow = self.followed.filter_by(followed_id=user.id).first()
+        if follow:
+            db.session.delete(follow)
+
+    def is_following_user(self, user):
+        if user.id is None:
+            return False
+        return self.followed.filter_by(followed_id=user.id).first() is not None
+
+    def is_followed_by_user(self, user):
+        if user.id is None:
+            return False
+        return self.follower.filter_by(follower_id=user.id).first() is not None
 
 
 class AnonymousUser(AnonymousUserMixin):
@@ -147,6 +188,11 @@ class AnonymousUser(AnonymousUserMixin):
 login_manager.anonymous_user = AnonymousUser
 
 
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
 # Model for Posts Recipes
 class Post(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -155,7 +201,7 @@ class Post(db.Model, UserMixin):
     post_image = db.Column(db.String(200), nullable=False, default='default.jpg')
 
     # additional parameters of the post-recipe, right-side part of the post page
-    # # rating = db.Column(db.Integer, default=0)   ## not implemented yet
+    rating = db.Column(db.Integer, default=0)   ## not implemented yet
     date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     portions = db.Column(db.Integer, nullable=False)
     prep_time = db.Column(db.Integer, nullable=False)
@@ -166,7 +212,18 @@ class Post(db.Model, UserMixin):
     # post-recipe ingredients and recipe
     ingredients = db.Column(db.Text, nullable=False)
     preparation = db.Column(db.Text, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # future feature
+    # comments = db.relationship('Comment', backref='post', lazy='dynamic')
+
+    def rate_recipe(self, rate):
+        pass
 
     def __repr__(self):
         return f"""User('{self.title}', '{self.date_posted}')"""
+
+
+class Comment(db.Model):
+    __tablename__ = 'comments'
+    id = db.Column(db.Integer, primary_key=True)

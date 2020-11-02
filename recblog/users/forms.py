@@ -1,14 +1,13 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextAreaField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextAreaField, SelectField, IntegerField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Regexp
-from recblog.models import User
 from flask_login import current_user
-
+from ..models import User, Post
 
 
 class RegistrationForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired(), Length(min=3, max=20),
+    username = StringField('Username', validators=[DataRequired(), Length(min=3, max=24),
                                                    Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0, "Username must have only letters, numbers, dots or underscores")])
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
@@ -27,9 +26,11 @@ class RegistrationForm(FlaskForm):
 
 
 class UpdateUserForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired(), Length(min=3, max=20)])
+    username = StringField('Username', validators=[DataRequired(), Length(min=3, max=24)])
     email = StringField('Email', validators=[DataRequired(), Email()])
     picture = FileField('Update Profile Picture', validators=[FileAllowed(['jpg', 'png'])])
+    location = StringField('Location', validators=[Length(min=2, max=24)])
+    about_me = TextAreaField('About me')
     submit = SubmitField('Update Profile')
 
     def validate_username(self, username):

@@ -1,8 +1,6 @@
-from flask import Blueprint
 from flask import render_template
-from recblog import db
-
-errors = Blueprint('errors', __name__)
+from . import errors
+from .. import db
 
 @errors.errorhandler(404)
 def error_404(error):

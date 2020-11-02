@@ -1,21 +1,18 @@
 import os
-from flask import Blueprint, current_app
-from flask import render_template, url_for, flash, redirect, request, abort
-from recblog import db
-from recblog.posts.forms import PostForm
-from recblog.models import Post
+from flask import render_template, request, url_for, redirect, flash, abort, current_app
 from flask_login import current_user, login_required
-from recblog.posts.utils import save_picture
-
-
-posts = Blueprint('posts', __name__)
+from .. import db
+from . import posts
+from ..models import Permission, Post
+from .forms import PostForm
+from .utils import save_picture
 
 
 @posts.route("/post/new", methods=['GET', 'POST'])
 @login_required
 def new_post():
     form = PostForm()
-    if form.validate_on_submit():
+    if current_user.can(Permission.WRITE) and form.validate_on_submit():
         if form.post_picture.data:
             picture_file = save_picture(form.post_picture.data)
             p_image = picture_file

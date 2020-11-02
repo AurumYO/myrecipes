@@ -1,19 +1,30 @@
+import os
 from flask import Flask
+from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_bcrypt import Bcrypt
-from flask_migrate import Migrate
+
 from flask_login import LoginManager
-from flask_mail import Mail
-from recblog.config import Config
+from config import Config
 
 
+
+# app.config['SECRET_KEY'] = '18ae72b4eb2406d9d1bd524f366c9aaf'
+
+# basedir = os.path.abspath(os.path.dirname(__file__))
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+# app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
+# app.config['FLASKY_ADMIN'] = 'timelion14@gmail.com'
+
+mail = Mail()
 db = SQLAlchemy()
 
-bcrypt = Bcrypt()
-
+config = Config()
 admin = Admin()    ## , name='myrecipes', template_mode='bootstrap4'
 
+bcrypt = Bcrypt()
 
 ###########################
 #### LOGIN CONFIGS #######
@@ -29,35 +40,41 @@ login_manager.login_view = 'users.login'
 login_manager.login_message_category = 'info'
 
 
-mail = Mail()
+
+# app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+# app.config['MAIL_PORT'] = 587
+# app.config['MAIL_USE_TLS'] = True
+# app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER')
+# app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS')
+
+# app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky]'
+# app.config['FLASKY_MAIL_SENDER'] = 'Flasky admin <flasky@demo.com>'
 
 
-def create_app(config_class=Config):
-    app = Flask(__name__)
-    app.config.from_object(Config)
+def create_app():
+    app = Flask( __name__ )
+    app.config.from_object(config)
+    config.init_app(app)
 
+    mail.init_app(app)
     db.init_app(app)
+
+    login_manager.init_app(app)
 
     bcrypt.init_app(app)
 
     admin.init_app(app)
 
-    migrate = Migrate(app, db)
+    from .main import main as main_blueprint
+    app.register_blueprint(main_blueprint)
 
-    login_manager.init_app(app)
+    from .users import users as users_blueprint
+    app.register_blueprint(users_blueprint)
 
-    mail.init_app(app)
+    from .posts import posts as posts_blueprint
+    app.register_blueprint(posts_blueprint)
 
-
-    from recblog.users.routes import users
-    from recblog.posts.routes import posts
-    from recblog.content_management.routes import admins
-    from recblog.errors.routes import errors
-    from recblog.main.routes import main
-    app.register_blueprint(users)
-    app.register_blueprint(posts)
-    app.register_blueprint(admins)
-    app.register_blueprint(errors)
-    app.register_blueprint(main)
+    from .content_management import admins as admins_blueprint
+    app.register_blueprint(admins_blueprint)
 
     return app

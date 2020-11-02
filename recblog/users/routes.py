@@ -1,13 +1,28 @@
-from flask import render_template, url_for, flash, redirect, request, Blueprint
-from recblog import db, bcrypt
-from recblog.users.forms import RegistrationForm, LoginForm, UpdateUserForm, RequestResetForm, ResetPasswordForm
-from recblog.models import User, Post
-from flask_login import login_user, current_user, logout_user, login_required
-from recblog.users.utils import add_profile_pic
-from recblog.users.utils import send_reset_email, send_confirmation_email
+from flask import render_template, url_for, request, redirect, flash
+from flask_login import login_user, logout_user, login_required, current_user
+from . import users
+from .. import db, bcrypt
+from ..models import User, Post
+from .forms import RegistrationForm, LoginForm, UpdateUserForm, RequestResetForm, ResetPasswordForm
+from .utils import send_reset_email, send_confirmation_email, add_profile_pic
 
 
-users = Blueprint('users', __name__)
+@users.before_app_request
+def before_request():
+    if current_user.is_authenticated:
+        current_user.ping()
+        if not current_user.confirmed and request.endpoint \
+                and request.blueprint != 'users' \
+                and request.endpoint != 'static':
+            return redirect(url_for('users.unconfirmed'))
+
+
+@users.route('/unconfirmed')
+def unconfirmed():
+    if current_user.is_anonymous or current_user.confirmed:
+        return redirect(url_for('main.home'))
+    return render_template('unconfirmed.html', user=current_user)
+
 
 @users.route("/register", methods=["GET", "POST"])
 def register():
@@ -22,7 +37,6 @@ def register():
         token = user.generate_confirmation_token()
         send_confirmation_email(user.email, 'Confirm Your Account with Recipes', 'confirm_registration', user=user, token=token)
         flash(f'Account created for {form.username.data}! Confirmation email was send to your registered email', 'success')
-
         return redirect(url_for('users.login'))
     return render_template('register.html', title='Register', form=form)
 
@@ -49,9 +63,18 @@ def logout():
     return redirect(url_for('main.home'))
 
 
-@users.route("/account", methods=["GET", "POST"])
+@users.route('/account', methods=["GET"])
 @login_required
 def account():
+    user = User.query.filter_by(username=current_user.username).first_or_404()
+    image_file = url_for('static', filename='profile_pics/' + current_user.image_file )
+    return render_template('account.html', user=user, image_file=image_file)
+
+
+
+@users.route("/update_account/<int:user_id>", methods=["GET", "POST"])
+@login_required
+def update_account(user_id):
     form = UpdateUserForm()
     if form.validate_on_submit():
         if form.picture.data:
@@ -60,15 +83,18 @@ def account():
             current_user.image_file = pic
         current_user.username = form.username.data
         current_user.email = form.email.data
+        current_user.location = form.location.data
+        current_user.about_me = form.about_me.data
         db.session.commit()
         flash("Your account info has been updated!", 'success')
         return redirect(url_for('users.account'))
     elif request.method == 'GET':
         form.username.data = current_user.username
         form.email.data = current_user.email
-        form.picture.data = current_user.image_file
+        form.location.data = current_user.location
+        form.about_me.data = current_user.about_me
     image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
-    return render_template('account.html', title='Account', image_file=image_file, form=form)
+    return render_template('update_account.html', title='Account', image_file=image_file, form=form)
 
 
 @users.route("/user/<string:username>")
@@ -111,12 +137,13 @@ def reset_token(token):
         return redirect(url_for('users.login'))
     return render_template('reset_token.html', title='Reset Password', form=form)
 
-@users.route('/confirm_registration_token/<token>')
+
+@users.route('/confirm/<token>')
 @login_required
-def confirm_registration_token(token):
+def confirm_token(token):
     if current_user.confirmed:
         return redirect(url_for('main.home'))
-    if current_user.confirm_user_registration(token):
+    if current_user.confirm(token):
         db.session.commit()
         flash("You have confirmed your account. Welcome to the Delicious Life!", 'success')
     else:
@@ -124,26 +151,11 @@ def confirm_registration_token(token):
     return redirect(url_for('main.home'))
 
 
-## replace with Blueprints with app.before_app_request
-@users.before_app_request
-def before_request():
-    if current_user.is_authenticated and not current_user.confirmed and request.endpoint != 'static':
-        ## add after blueprints  - and request.blueprint != 'auth' and request.endpoint != 'static':
-        return redirect(url_for('users.unconfirmed'))
-
-
-@users.route('/unconfirmed')
-def unconfirmed():
-    if current_user.is_anonymous or current_user.confirmed:
-        return redirect(url_for('main.home'))
-    return render_template('unconfirmed.html', user=current_user)
-
-
 @users.route('/confirm')
 @login_required
 def resend_confirmation():
-    confirmation_token = current_user.generate_confirmation_token()
-    send_confirmation_email(current_user.email, 'Confirm Your Account', user=current_user, token=confirmation_token)
+    token = current_user.generate_confirmation_token()
+    send_confirmation_email(current_user.email, 'Confirm Your Account', 'confirm_registration', user=current_user, token=token)
     flash("A new confirmation email has been sent to you by email. "
           "Please follow instructions from email to confirm your account.", 'success')
     return redirect(url_for('main.home'))
