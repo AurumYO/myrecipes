@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block app_content %}
+    <h1>Followers of {{ user.username }}</h1>
+        <div class="container">
+        {%for follow in follows %}
+            <p> {{ follow.follower }}</p>
+            {% if follow.user != user %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('users.user_account', username = follow.user.username) }}">
+                        <img class="img-rounded" src="{{ follow.user.image_file }}">
+                        {{ follow.user.username }}
+                    </a>
+                </td>
+                <td>{{ follow.timestamp }}</td>
+            </tr>
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endblock app_content%}

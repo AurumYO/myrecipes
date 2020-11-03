@@ -88,21 +88,24 @@ class User(db.Model, UserMixin):
     location = db.Column(db.String())
     about_me = db.Column(db.Text)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
+
+    # for the cascade behavior 'delete-orphan' was chosen as fo association table correct way to delete the entries
+    # that point to a record that was deleted
     followed = db.relationship('Follow', foreign_keys=[Follow.follower_id],
                                backref=db.backref('follower', lazy='joined'),
                                lazy='dynamic', cascade='all, delete-orphan')
-    follower = db.relationship('Follow', foreign_keys=[Follow.followed_id],
+    followers = db.relationship('Follow', foreign_keys=[Follow.followed_id],
                                backref=db.backref('followed', lazy='joined'),
                                lazy='dynamic', cascade='all, delete-orphan')
     # comments = db.relationship('Comment', backref='author', lazy='dynamic')
 
-    @staticmethod
-    def add_self_follower():
-        for user in User.query.all():
-            if not user.is_following(user):
-                user.follow(user)
-                db.session.add(user)
-                db.session.commit()
+    # @staticmethod
+    # def add_self_follower():
+    #     for user in User.query.all():
+    #         if not user.is_following_user(user):
+    #             user.follow_user(user)
+    #             db.session.add(user)
+    #             db.session.commit()
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -111,7 +114,7 @@ class User(db.Model, UserMixin):
                 self.role = Role.query.filter_by(name='Administrator').first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
-        self.follow_user(self)
+
 
     def __repr__(self):
         return f"""User('{self.username}', '{self.email}', '{self.image_file}')"""
@@ -175,6 +178,10 @@ class User(db.Model, UserMixin):
         if user.id is None:
             return False
         return self.follower.filter_by(follower_id=user.id).first() is not None
+
+    @property
+    def followed_posts(self):
+        return Post.query.join(Follow, Follow.followed_id == Post.author_id).filter(Follow.follower_id == self.id)
 
 
 class AnonymousUser(AnonymousUserMixin):

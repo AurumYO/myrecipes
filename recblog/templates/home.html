@@ -59,7 +59,13 @@
         </div>
     </div>
 
-
+    {% if current_user.is_authenticated %}
+        <!-- Section Number 4 - Posts by Followed Users  -->
+    <div class="content-section">
+        <h2>Posts by followed Users</h2>
+    </div>
+    {% endif %}
+    
     <!-- Section Number 4 - Lifehacks  -->
     <div class="content-section">
         <h2>Lifehacks</h2>

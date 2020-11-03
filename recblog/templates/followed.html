@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block app_content %}
+    <h1>Followed by {{ user.username }}</h1>
+    <div class="container">
+        {%for item in followed%}
+            <p> {{ item.followed }}</p>
+
+        {% endfor %}
+    </div>
+
+{% endblock app_content%}

@@ -1,8 +1,6 @@
 {% extends "layout.html" %}
 {% block app_content %}
 <div class="col-sm-9">
-
-
             <div>
 
                 <legend class="border-bottom mb-4">Author Info</legend>
@@ -20,7 +18,32 @@
                 <div class="container">
                     <p>Last seen: {{ user.last_seen.strftime('%Y-%m-%d') }}</p>
                 </div>
-                
+
+                {% if current_user.is_authenticated %}
+                    <div>
+                        {% if current_user.can(Permission.FOLLOW) and user != current_user %}
+                            {% if not current_user.is_following_user(user) %}
+                                <a href="{{ url_for('.follow_user', username=user.username) }}" class="btn btn-primary">
+                                    Follow
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('.stop_follow_user', username=username) }}" class="btn btn-primary">
+                                    Unfollow
+                                </a>
+                            {% endif %}
+                        {% endif %}
+
+                        <a href="{{ url_for('users.followers', username=user.username) }}">
+                            Followers: <span class="badge">{{ user.followers.count() }}</span>
+                        </a>
+                        <a href="{{ url_for('users.followed', username=user.username) }}">
+                            Following: <span class="badge">{{ user.followed.count() }}</span>
+                        </a>
+                        {% if user != current_user and user.is_following_user(current_user) %}
+                            <span class="label label-default">Follows you</span>
+                        {% endif %}
+                    </div>
+                {% endif %}
                 <div class="container">
                     <p>About me : {{ user.about_me }} </p>
                 </div>

@@ -2,9 +2,10 @@ from flask import render_template, url_for, request, redirect, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from . import users
 from .. import db, bcrypt
-from ..models import User, Post
+from ..models import User, Post, Permission
 from .forms import RegistrationForm, LoginForm, UpdateUserForm, RequestResetForm, ResetPasswordForm
 from .utils import send_reset_email, send_confirmation_email, add_profile_pic
+from recblog.content_management.decorators import permission_required
 
 
 @users.before_app_request
@@ -167,3 +168,58 @@ def resend_confirmation():
     flash("A new confirmation email has been sent to you by email. "
           "Please follow instructions from email to confirm your account.", 'success')
     return redirect(url_for('main.home'))
+
+
+@users.route('/follow_user/<string:username>', methods=['GET', 'POST'])
+@login_required
+@permission_required(Permission.FOLLOW)
+def follow_user(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('Invalid user.', 'danger')
+        return redirect(url_for('main.home'))
+    if current_user.is_following_user(user):
+        flash(f"You are already following {user.username}.", 'info')
+        return redirect(url_for('users.user_account', username=username))
+    current_user.follow_user(user)
+    db.session.commit()
+    flash(f"You are now following {user.username}", 'success')
+    return redirect(url_for('users.user_account', username=username))
+
+
+@users.route('/stop_follow_user/<string:username>', methods=['GET', 'POST'])
+@login_required
+@permission_required(Permission.FOLLOW)
+def stop_follow_user(username):
+    user = User.query.filter_by(username=username).first()
+
+    return redirect(url_for('.user_account', username=username))
+
+@users.route('/followers/<string:username>', methods=['GET'])
+@login_required
+def followers(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('Invalid user', 'danger')
+        return redirect(url_for('main.home'))
+    # # pagination will be implemented later
+    # page = request.args.get('page', 1, type=int)
+    # pagination = user.followers.paginate(page, per_page=current_app.config['FLASKY_FOLLOWERS_PER_PAGE], error_out=False)
+    follows = [{'user': item.follower, 'timestamp': item.timestamp} for item in user.followers]
+
+    return render_template('followers.html', user=user, title='Followers of', endpoint='.followers', follows=follows)
+
+@users.route('/followed/<string:username>', methods=['GET'])
+@login_required
+def followed(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash(f'Invalid user')
+        return redirect(url_for('main.home'))
+    # # pagination will be implemented later
+    # page = request.args.get('page', 1, type=int)
+    # pagination = user.followers.paginate(page, per_page=current_app.config['FLASKY_FOLLOWERS_PER_PAGE], error_out=False)
+    followed = [{'user': item.followed, 'timestamp': item.timestamp} for item in user.followed]
+
+    return render_template('followed.html', user=user, title='Followed by', endpoint='.followed', followed=followed)
+
