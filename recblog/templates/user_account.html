@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% block app_content %}
+<div class="col-sm-9">
+
+
+            <div>
+
+                <legend class="border-bottom mb-4">Author Info</legend>
+                    <div class="container">
+                             <img class="rounded-circle account-img" src="{{ image_file }}">
+                             <h1>{{ user.username }}</h1>
+                    </div>
+
+                <div class="container">
+                    {% if user.location %}
+                        {{ user.location }}
+                    {% endif %}
+                </div>
+
+                <div class="container">
+                    <p>Last seen: {{ user.last_seen.strftime('%Y-%m-%d') }}</p>
+                </div>
+                
+                <div class="container">
+                    <p>About me : {{ user.about_me }} </p>
+                </div>
+
+                <div class="container">
+                    <p>Email: {{ user.email }}</p>
+                </div>
+
+            </div>
+
+        </div>
+
+
+</div>
+{% endblock app_content%}

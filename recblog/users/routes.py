@@ -71,6 +71,14 @@ def account():
     return render_template('account.html', user=user, image_file=image_file)
 
 
+@users.route('/user_account/<string:username>', methods=["GET"])
+# @login_required
+def user_account(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    image_file = url_for('static', filename='profile_pics/' + user.image_file)
+    return render_template('user_account.html', user=user, image_file=image_file)
+
+
 
 @users.route("/update_account/<int:user_id>", methods=["GET", "POST"])
 @login_required
