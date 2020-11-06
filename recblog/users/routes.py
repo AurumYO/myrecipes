@@ -77,7 +77,8 @@ def account():
 def user_account(username):
     user = User.query.filter_by(username=username).first_or_404()
     image_file = url_for('static', filename='profile_pics/' + user.image_file)
-    return render_template('user_account.html', user=user, image_file=image_file)
+    posts = user.posts.order_by(Post.date_posted.desc()).all()
+    return render_template('user_account.html', user=user, image_file=image_file, posts=posts)
 
 
 

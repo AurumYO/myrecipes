@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% import "_macros.html" as macros %}
+
+<h2>MYRECIPES  - Comments Moderation Section</h2>
+<h3>Welcome {{ current_user.username }}</h3>
+
+{% block app_content %}
+<div class="page-header">
+    <h1>Comments Moderation</h1>
+</div>
+
+{% set moderate  = True %}
+{% include "_comments.html" %}
+
+{%if pagination %}
+<div class="pagination">
+    {{ macros.pagination_widget(pagination, 'admins.moderate') }}
+</div>
+{% endif %}
+
+{% endblock %}

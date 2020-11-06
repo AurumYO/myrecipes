@@ -1,9 +1,6 @@
-{% extends "layout.html" %}
-{% block app_content %}
-<div class="col-sm-9">
-  <h1>Recent Recipes</h1>
+{% for post in posts %}
     <div class="row">
-    {% for post in rec_posts.items %}
+    {% for post in posts %}
         <div class="column col col-lg-3">
 
                 <div class="card-deck">
@@ -23,18 +20,4 @@
         </div>
     {% endfor %}
     </div>
-
-    <!-- Page Navigation -->
-    {% for page_num in rec_posts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
-            {% if page_num %}
-                {% if rec_posts.page == page_num %}
-                    <a class="btn btn-info mb-4" href="{{ url_for('posts.recent_recipes', page=page_num) }}">{{ page_num }}</a>
-                {% else %}
-                    <a class="btn btn-outline-info mb-4" href="{{ url_for('posts.recent_recipes', page=page_num) }}">{{ page_num }}</a>
-                {% endif%}
-            {% else %}
-                ...
-            {% endif %}
-    {% endfor %}
-</div>
-{% endblock app_content%}
+{% endfor %}

@@ -4,7 +4,7 @@ from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_bcrypt import Bcrypt
-
+from flask_pagedown import PageDown
 from flask_login import LoginManager
 from config import Config
 
@@ -39,7 +39,7 @@ login_manager = LoginManager()
 login_manager.login_view = 'users.login'
 login_manager.login_message_category = 'info'
 
-
+pagedown = PageDown()
 
 # app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 # app.config['MAIL_PORT'] = 587
@@ -64,6 +64,8 @@ def create_app():
     bcrypt.init_app(app)
 
     admin.init_app(app)
+
+    pagedown.init_app(app)
 
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)

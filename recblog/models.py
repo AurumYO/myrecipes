@@ -2,6 +2,8 @@ from datetime import datetime
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app, request, url_for
 from flask_login import UserMixin, AnonymousUserMixin
+from markdown import markdown
+import bleach
 from . import db, login_manager
 
 
@@ -82,7 +84,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(120), unique=True, nullable=False)
     image_file = db.Column(db.String(20), nullable=False, default='default.jpg')
     password = db.Column(db.String(60), nullable=False)
-    posts = db.relationship('Post', backref='author', lazy=True)
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
     confirmed = db.Column(db.Boolean, default=False)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     location = db.Column(db.String())
@@ -97,7 +99,8 @@ class User(db.Model, UserMixin):
     followers = db.relationship('Follow', foreign_keys=[Follow.followed_id],
                                backref=db.backref('followed', lazy='joined'),
                                lazy='dynamic', cascade='all, delete-orphan')
-    # comments = db.relationship('Comment', backref='author', lazy='dynamic')
+
+    comments = db.relationship('Comment', backref='author', lazy='dynamic')
 
     # @staticmethod
     # def add_self_follower():
@@ -181,7 +184,7 @@ class User(db.Model, UserMixin):
 
     @property
     def followed_posts(self):
-        return Post.query.join(Follow, Follow.followed_id == Post.author_id).filter(Follow.follower_id == self.id)
+        return Post.query.join(Follow, Follow.followed_id == Post.user_id).filter(Follow.follower_id == self.id)
 
 
 class AnonymousUser(AnonymousUserMixin):
@@ -202,6 +205,7 @@ def load_user(user_id):
 
 # Model for Posts Recipes
 class Post(db.Model, UserMixin):
+    __tablename__ = 'posts'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text(500))
@@ -218,11 +222,30 @@ class Post(db.Model, UserMixin):
 
     # post-recipe ingredients and recipe
     ingredients = db.Column(db.Text, nullable=False)
+    ingredients_html = db.Column(db.Text, nullable=False)
     preparation = db.Column(db.Text, nullable=False)
+    preparation_html = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    # future feature
-    # comments = db.relationship('Comment', backref='post', lazy='dynamic')
+    # one-to-many relationships with Comments table
+    comments = db.relationship('Comment', backref='post', lazy='dynamic')  #'dynamic')
+
+
+
+
+    @staticmethod
+    def on_changed_ingredients(target, new_value, old_value, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code', 'em', 'i', 'li', 'ol', 'pre', 'strong',
+                        'ul', 'h1', 'h2', 'h3', 'p']
+        target.ingredients_html = bleach.linkify(bleach.clean(markdown(new_value, output_format='html'),
+                                                             tags=allowed_tags, strip=True))
+
+    @staticmethod
+    def on_changed_preparation(target, new_value, old_value, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code', 'em', 'i', 'li', 'ol', 'pre', 'strong',
+                        'ul', 'h1', 'h2', 'h3', 'p']
+        target.preparation_html = bleach.linkify(bleach.clean(markdown(new_value, output_format='html'),
+                                                             tags=allowed_tags, strip=True))
 
     def rate_recipe(self, rate):
         pass
@@ -231,6 +254,26 @@ class Post(db.Model, UserMixin):
         return f"""User('{self.title}', '{self.date_posted}')"""
 
 
+db.event.listen(Post.ingredients, 'set', Post.on_changed_ingredients)
+db.event.listen(Post.preparation, 'set', Post.on_changed_preparation)
+
+
 class Comment(db.Model):
     __tablename__ = 'comments'
     id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    body_html = db.Column(db.Text)
+    comment_date = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    disabled = db.Column(db.Boolean)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+
+    @staticmethod
+    def on_changed_comment(target, new_value, old_value, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code', 'em', 'i', 'strong',
+                        'p']
+        target.body_html = bleach.linkify(bleach.clean(markdown(new_value, output_format='html'), tags=allowed_tags,
+                                                       strip=True))
+
+
+db.event.listen(Comment.body, 'set', Comment.on_changed_comment)

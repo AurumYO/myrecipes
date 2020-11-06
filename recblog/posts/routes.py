@@ -3,9 +3,10 @@ from flask import render_template, request, url_for, redirect, flash, abort, cur
 from flask_login import current_user, login_required
 from .. import db
 from . import posts
-from ..models import Permission, Post
-from .forms import PostForm
+from ..models import Permission, Post, Comment
+from .forms import PostForm, CommentForm
 from .utils import save_picture
+
 
 
 @posts.route("/post/new", methods=['GET', 'POST'])
@@ -29,11 +30,25 @@ def new_post():
 
 
 # render template by given id of the post
-@posts.route("/post/<int:post_id>")
+@posts.route("/post/<int:post_id>", methods=["GET", "POST"])
 def post(post_id):
     post = Post.query.get_or_404(post_id)
     post_image = url_for('static', filename='post_pictures/' + post.post_image)
-    return render_template('post.html', title=post.title, post=post, post_image=post_image)
+    comments_form = CommentForm()
+    if comments_form.validate_on_submit():
+        comment = Comment(body=comments_form.body.data, post=post, author=current_user._get_current_object())
+        db.session.add(comment)
+        db.session.commit()
+        flash('Your comment has been published!', 'success')
+        return redirect(url_for('posts.post', post_id=post.id, page=-1))
+    page = request.args.get('page', 1, type=int)
+    if page == -1:
+        page = (post.comments.count() - 1) // current_app.config['MYRECBLOG_COMMENTS_PER_PAGE'] + 1
+    pagination = post.comments.order_by(Comment.comment_date.asc()).paginate(
+        page, per_page=current_app.config['MYRECBLOG_COMMENTS_PER_PAGE'], error_out=False)
+    comments = pagination.items
+    return render_template('post.html', title=post.title, post=post, post_image=post_image, form=comments_form,
+                           comments=comments, pagination=pagination)
 
 
 @posts.route("/post/<int:post_id>/update", methods=["GET", "POST"])
@@ -93,3 +108,5 @@ def recent_recipes():
     page = request.args.get('page', 1, type=int)
     rec_posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=4)
     return render_template('recent_recipes.html', title='Recent Recipes', rec_posts=rec_posts)
+
+

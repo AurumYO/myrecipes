@@ -2,6 +2,7 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, SubmitField, TextAreaField, SelectField, IntegerField
 from wtforms.validators import DataRequired, Length
+from flask_pagedown.fields import PageDownField
 
 
 class PostForm(FlaskForm):
@@ -19,9 +20,14 @@ class PostForm(FlaskForm):
                                                                      ('pasta', 'Pasta recipe'), ('maindish', 'Main Dish'),
                                                                      ('noalcdr', 'Non Alcohol Drink'), ('alcdr', 'Alcohol Drink'),
                                                                      ('seaf', 'Seafood'), ('fish', 'Fish'), ('brd', 'Bread'),
-                                                                     ('pie', 'Pie'), ('meet', 'Meat'), ('cake', 'Cake'),
+                                                                     ('pie', 'Pie'), ('meat', 'Meat'), ('cake', 'Cake'),
                                                                      ('salad', 'Salad')])
 
-    ingredients = TextAreaField('Ingredients: ', validators=[DataRequired()])
-    preparation = TextAreaField('Process: ', validators=[DataRequired()])
+    ingredients = PageDownField('Ingredients: ', validators=[DataRequired()])
+    preparation = PageDownField('Process: ', validators=[DataRequired()])
     submit = SubmitField('Post your recipe!')
+
+
+class CommentForm(FlaskForm):
+    body = StringField('', validators=[DataRequired()])
+    submit = SubmitField('Submit comment')

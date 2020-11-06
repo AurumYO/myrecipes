@@ -17,6 +17,11 @@ class Config:
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    MYRECBLOG_POSTS_PER_PAGE = 12
+    MYRECBLOG_COMMENTS_PER_PAGE = 20
+    MYRECBLOG_FOLLOWERS_PER_PAGE = 50
+
+
     @staticmethod
     def init_app(app):
         pass

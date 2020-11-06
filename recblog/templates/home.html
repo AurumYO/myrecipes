@@ -63,9 +63,23 @@
         <!-- Section Number 4 - Posts by Followed Users  -->
     <div class="content-section">
         <h2>Posts by followed Users</h2>
+        <div class="card-deck">
+            {% for post in followed_posts_page.items %}
+            <div class="card">
+                <img src="{{ url_for('static', filename='post_pictures/' + post.post_image) }}" class="card-img-top" alt="...">
+                <div class="card-body">
+                    <h5 class="card-title"><a href="{{ url_for('posts.post', post_id=post.id) }}">{{ post.title}}</a></h5>
+                    <p class="card-text">{{ post.description }}</p>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">{{ post.date_posted.strftime('%Y-%m-%d') }}</small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
     {% endif %}
-    
+
     <!-- Section Number 4 - Lifehacks  -->
     <div class="content-section">
         <h2>Lifehacks</h2>
@@ -81,3 +95,8 @@
 </div>
 
 {% endblock app_content%}
+
+{% block scripts %}
+    {{ super() }}
+    {{ pagedown.include_pagedown() }}
+{% endblock %}

@@ -12,5 +12,14 @@ def make_shell_context():
     return dict(db=db, User=User, Follow=Follow, Role=Role,
                 Permission=Permission, Post=Post, Comment=Comment)
 
+
+
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+with app.app_context():
+    if db.engine.url.drivername == 'sqlite':
+        migrate.init_app(app, db, render_as_batch=True)
+    else:
+        migrate.init_app(app, db)
