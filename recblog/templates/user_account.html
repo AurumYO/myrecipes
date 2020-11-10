@@ -16,7 +16,7 @@
                 </div>
 
                 <div class="container">
-                    <p>Last seen: {{ user.last_seen.strftime('%Y-%m-%d') }}</p>
+                    <p>Last seen: {{ moment(user.last_seen).fromNow(refresh=True) }}</p>
                 </div>
 
                 {% if current_user.is_authenticated %}

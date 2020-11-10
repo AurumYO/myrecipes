@@ -7,7 +7,7 @@
             </a>
         </div>
         <div class="comment-content">
-            <div class="comment-date">{{ comment.comment_date }}</div>
+            <div class="comment-date">{{ moment(comment.comment_date).fromNow(refresh=True) }}</div>
             <div class="comment-author"><a href="{{ url_for('users.user_account', username=comment.author.username) }}">{{ comment.author.username }}</a></div>
             <div class="comment-body">
                 {% if comment.disabled %}

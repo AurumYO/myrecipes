@@ -7,6 +7,7 @@ from flask_bcrypt import Bcrypt
 from flask_pagedown import PageDown
 from flask_login import LoginManager
 from config import Config
+from flask_moment import Moment
 
 
 
@@ -25,6 +26,8 @@ config = Config()
 admin = Admin()    ## , name='myrecipes', template_mode='bootstrap4'
 
 bcrypt = Bcrypt()
+
+moment = Moment()
 
 ###########################
 #### LOGIN CONFIGS #######
@@ -66,6 +69,8 @@ def create_app():
     admin.init_app(app)
 
     pagedown.init_app(app)
+
+    moment.init_app(app)
 
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)

@@ -16,7 +16,7 @@
             <h2 class="article-title">{{ post.title }}</h2>
             <p class="article-content">{{ post.description }}</p>
             <img class="img-thumbnail" src=" {{ post_image }}">
-              <p class="article-content">{{ post.date_posted }}</p>
+              <p class="article-content">{{ moment(post.date_posted).format("LLL") }}</p>
               <p class="article-content">{{ post.portions }}</p>
               <p class="article-content">{{ post.prep_time }}</p>
               <p class="article-content">{{ post.type_category }}</p>
@@ -102,5 +102,7 @@
 
 {% block scripts %}
     {{ super() }}
+    {{ moment.include_moment() }}
+    {{ moment.locale() }}
     {{ pagedown.include_pagedown() }}
 {% endblock %}

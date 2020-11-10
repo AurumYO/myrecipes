@@ -13,7 +13,7 @@
                       <p class="card-text">{{ post.description[:100] }}</p>
                     </div>
                     <div class="card-footer">
-                      <small class="text-muted">{{ post.date_posted.strftime('%Y-%m-%d') }}</small>
+                      <small class="text-muted">{{ moment(post.date_posted).format("LLL") }}</small>
                     </div>
                   </div>
                 </div>

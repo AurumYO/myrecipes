@@ -30,7 +30,7 @@
                     <p class="card-text">{{ latest_post.description }}</p>
                 </div>
                 <div class="card-footer">
-                    <small class="text-muted">{{ latest_post.date_posted.strftime('%Y-%m-%d') }}</small>
+                    <small class="text-muted">{{ moment(latest_post.date_posted).format("dddd, MMMM Do YYYY, h:mm:ss a") }}</small>
                 </div>
             </div>
             {% endfor %}
@@ -52,7 +52,7 @@
                     <p class="card-text">{{ post.description }}</p>
                 </div>
                 <div class="card-footer">
-                    <small class="text-muted">{{ post.date_posted.strftime('%Y-%m-%d') }}</small>
+                    <small class="text-muted">{{ moment(post.date_posted).format("dddd, MMMM Do YYYY, h:mm:ss a") }}</small>
                 </div>
             </div>
             {% endfor %}
@@ -72,7 +72,7 @@
                     <p class="card-text">{{ post.description }}</p>
                 </div>
                 <div class="card-footer">
-                    <small class="text-muted">{{ post.date_posted.strftime('%Y-%m-%d') }}</small>
+                    <small class="text-muted">{{ moment(post.date_posted).format("dddd, MMMM Do YYYY, h:mm:ss a") }}</small>
                 </div>
             </div>
             {% endfor %}
