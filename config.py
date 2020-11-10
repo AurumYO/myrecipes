@@ -8,11 +8,11 @@ class Config:
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.environ.get('EMAIL_USER')
     MAIL_PASSWORD = os.environ.get('EMAIL_PASS')
-    FLASKY_MAIL_SUBJECT_PREFIX = '[Flasky]'
-    FLASKY_MAIL_SENDER = 'Flasky admin <flasky@demo.com>'
+    MYRECBLOG_MAIL_SUBJECT_PREFIX = '[MYRECBLOG]'
+    MYRECBLOG_MAIL_SENDER = 'MYRECBLOG admin <myrecblog@demo.com>'
 
-    FLASKY_ADMIN = os.environ.get('FLASKY_ADMIN')
-    FLASK_ADMIN_SWATCH = 'cerulean'
+    MYRECBLOG_ADMIN = os.environ.get('MYRECBLOG_ADMIN')
+    MYRECBLOG_ADMIN_SWATCH = 'cerulean'
 
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
     SQLALCHEMY_TRACK_MODIFICATIONS = False

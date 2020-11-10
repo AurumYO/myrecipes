@@ -80,12 +80,13 @@
     </header>
 
     <main role="main">
-
-        <div class="container-fluid" style="margin-top:30px">
+    {% block content %}
+        <div class="container-fluid" style="margin-top:1px">
             <div class="row">
                 <div class="col-sm-1">
 
                 </div>
+
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
@@ -123,6 +124,7 @@
                 </div>
             </div>
         </div>
+    {% endblock content %}
     </main>
 
 
