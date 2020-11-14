@@ -107,7 +107,7 @@ def update_account(user_id):
     return render_template('update_account.html', title='Account', image_file=image_file, form=form)
 
 
-@users.route("/user/<string:username>")
+@users.route("/user_posts/<string:username>")
 def user_posts(username):
     page = request.args.get('page', 1, type=int)
     user = User.query.filter_by(username=username).first_or_404()
@@ -195,6 +195,7 @@ def stop_follow_user(username):
     user = User.query.filter_by(username=username).first()
 
     return redirect(url_for('.user_account', username=username))
+
 
 @users.route('/followers/<string:username>', methods=['GET'])
 @login_required

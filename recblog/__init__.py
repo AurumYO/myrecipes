@@ -64,4 +64,7 @@ def create_app():
     from .content_management import admins as admins_blueprint
     app.register_blueprint(admins_blueprint)
 
+    from .api import api as api_blueprint
+    app.register_blueprint(api_blueprint, url_prefix='/api/v1')
+
     return app

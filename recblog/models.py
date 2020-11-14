@@ -2,9 +2,11 @@ from datetime import datetime
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app, request, url_for
 from flask_login import UserMixin, AnonymousUserMixin
+from flask_bcrypt import generate_password_hash, check_password_hash
 from markdown import markdown
 import bleach
 from . import db, login_manager
+from recblog.exceptions import ValidationError
 
 
 class Permission:
@@ -130,6 +132,9 @@ class User(db.Model, UserMixin):
         s = Serializer(current_app.config['SECRET_KEY'], expires_sec)
         return s.dumps({'user_id': self.id}).decode('utf-8')
 
+    def check_password(self, password):
+        return check_password_hash(self.password, password)
+
     def confirm(self, token):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
@@ -185,6 +190,22 @@ class User(db.Model, UserMixin):
     @property
     def followed_posts(self):
         return Post.query.join(Follow, Follow.followed_id == Post.user_id).filter(Follow.follower_id == self.id)
+
+    def convert_user_json(self):
+        json_user = {
+            'url': url_for('api.get_user', user_id=self.id),
+            'username': self.username,
+            'email': self.email,
+            'image_file': self.image_file,
+            'posts_url': url_for('api.get_user_posts', id=self.id),
+            'location': self.location,
+            'role_id': self.role_id,
+            'about_me': self.about_me,
+            'last_seen': self.last_seen,
+            'followed_posts_url': url_for('api.get_followed_posts', id=self.id),
+            'post_count': self.posts.count()
+        }
+        return json_user
 
 
 class AnonymousUser(AnonymousUserMixin):
@@ -250,8 +271,37 @@ class Post(db.Model, UserMixin):
     def rate_recipe(self, rate):
         pass
 
+    def convert_post_json(self):
+        json_post = {
+            'url': url_for('api.get_post', post_id=self.id),
+            'title': self.title,
+            'description': self.description,
+            'post_image': self.post_image,
+            'rating': self.rating,
+            'date_posted': self.date_posted,
+            'portions': self.portions,
+            'prep_time': self.prep_time,
+            'type_category': self.type_category,
+            'ingredients': self.ingredients,
+            'ingredients_html': self.ingredients_html,
+            'preparation': self.preparation,
+            'preparation_html': self.preparation_html,
+            'user_url': url_for('api.get_user', user_id=self.user_id),
+            'comments_url': url_for('api.get_post', post_id=self.id),
+            'comments_count': self.comments.count()
+        }
+
+        return json_post
+
     def __repr__(self):
         return f"""User('{self.title}', '{self.date_posted}')"""
+
+    @staticmethod
+    def convert_post_from_json(json_post):
+        post_body = json_post.get()
+        if post_body is None:
+            raise ValidationError('There is no such post!')
+        return Post(post=post_body)
 
 
 db.event.listen(Post.ingredients, 'set', Post.on_changed_ingredients)
@@ -274,6 +324,22 @@ class Comment(db.Model):
                         'p']
         target.body_html = bleach.linkify(bleach.clean(markdown(new_value, output_format='html'), tags=allowed_tags,
                                                        strip=True))
+
+    def convert_comment_to_json(self):
+        json_comment = {
+            'url': url_for('api.get_comment', id=self.id),
+            'post_url': url_for('api.get_post', id=self.post_id),
+            'body': self.body,
+            'body_html': self.body_html,
+            'comment_date': self.comment_date,
+            'author_url': url_for('api.get_user', id=self.author_id)
+        }
+
+    def convert_from_json_comment(comment):
+        body = comment.get('body')
+        if body is None or body == '':
+            raise ValidationError('this post does not have a comment')
+        return Comment(body=body)
 
 
 db.event.listen(Comment.body, 'set', Comment.on_changed_comment)

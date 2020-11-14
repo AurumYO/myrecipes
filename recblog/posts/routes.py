@@ -55,7 +55,7 @@ def post(post_id):
 @login_required
 def update_post(post_id):
     post = Post.query.get_or_404(post_id)
-    if post.author != current_user:
+    if post.author != current_user or not current_user.can(Permission.ADMIN):
         abort(403)
     form = PostForm()
     if form.validate_on_submit():
@@ -108,5 +108,6 @@ def recent_recipes():
     page = request.args.get('page', 1, type=int)
     rec_posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=4)
     return render_template('recent_recipes.html', title='Recent Recipes', rec_posts=rec_posts)
+
 
 

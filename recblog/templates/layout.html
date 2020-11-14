@@ -18,6 +18,7 @@
     <!-- Include Moment.js scripts with Flask-Moment module -->
     {{ moment.include_jquery() }}
     {{ moment.include_moment() }}
+    {{ moment.locale(auto_detect=True) }}
 
     {% if title %}
         <title>My Recepies Blog! - {{ title }}</title>
