@@ -6,13 +6,13 @@ from flask_admin import Admin
 from flask_bcrypt import Bcrypt
 from flask_pagedown import PageDown
 from flask_login import LoginManager
-from config import Config
+from config import config
 from flask_moment import Moment
 
 mail = Mail()
 db = SQLAlchemy()
 
-config = Config()
+
 admin = Admin()    ## , name='myrecipes', template_mode='bootstrap4'
 
 bcrypt = Bcrypt()
@@ -34,10 +34,10 @@ login_manager.login_message_category = 'info'
 
 pagedown = PageDown()
 
-def create_app():
+def create_app(config_name):
     app = Flask( __name__ )
-    app.config.from_object(config)
-    config.init_app(app)
+    app.config.from_object(config[config_name])
+    config[config_name].init_app(app)
 
     mail.init_app(app)
     db.init_app(app)

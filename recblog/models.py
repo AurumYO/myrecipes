@@ -78,6 +78,22 @@ class Follow(db.Model):
                             primary_key=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
+    def convert_follower_json(self):
+        json_user = {
+            'follower_url': url_for('api.get_user', user_id=self.follower_id),
+            'follower_id': self.follower_id,
+            'timestamp': self.timestamp,
+        }
+        return json_user
+
+    def convert_followed_json(self):
+        json_user = {
+            'followed_url': url_for('api.get_user', user_id=self.followed_id),
+            'followed_id': self.followed_id,
+            'timestamp': self.timestamp,
+        }
+        return json_user
+
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
@@ -115,7 +131,7 @@ class User(db.Model, UserMixin):
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
         if self.role is None:
-            if self.email == current_app.config['FLASKY_ADMIN']:
+            if self.email == current_app.config['MYRECBLOG_ADMIN']:
                 self.role = Role.query.filter_by(name='Administrator').first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()

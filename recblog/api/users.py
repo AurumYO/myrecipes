@@ -63,12 +63,48 @@ def modify_user(id):
 
 @api.route('/user/<int:id>/followers', methods=["GET"])
 def get_user_followers(id):
-    pass
+    user = User.query.get_or_404(id)
+    if not user:
+        return bad_request("Some error happened while processing your request.")
+    page = request.args.get( 'page', 1, type=int )
+    pagination = user.followers.paginate(page,
+                                         per_page=current_app.config['MYRECBLOG_FOLLOWERS_PER_PAGE'],
+                                         error_out=False )
+    prev = None
+    if pagination.has_prev:
+        prev = url_for('api.user_followers', id=id, page=page - 1)
+    next = None
+    if pagination.has_next:
+        next = url_for('api.user_followers', id=id, page=page + 1)
+    return jsonify({
+        'follower': [item.convert_follower_json() for item in user.followers],
+        'prev_url': prev,
+        'next_url': next,
+        'count': pagination.total
+    })
 
 
 @api.route('/user/<int:id>/followed', methods=["GET"])
 def get_followed_users(id):
-    pass
+    user = User.query.get_or_404(id)
+    if not user:
+        return bad_request("Some error happened while processing your request.")
+    page = request.args.get('page', 1, type=int )
+    pagination = user.followed.paginate(page,
+                                         per_page=current_app.config['MYRECBLOG_FOLLOWED_PER_PAGE'],
+                                         error_out=False)
+    prev = None
+    if pagination.has_prev:
+        prev = url_for('api.user_followed', id=id, page=page - 1)
+    next = None
+    if pagination.has_next:
+        next = url_for('api.user_followed', id=id, page=page + 1)
+    return jsonify({
+        'followed_by': [item.convert_followed_json() for item in user.followed],
+        'prev_url': prev,
+        'next_url': next,
+        'count': pagination.total
+    })
 
 
 @api.route('/user_posts/<int:id>', methods=['GET'])

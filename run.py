@@ -15,7 +15,7 @@ from flask_migrate import Migrate
 from recblog import create_app, db
 from recblog.models import User, Follow, Role, Permission, Post, Comment
 
-app = create_app()
+app = create_app(os.getenv('FLASK_CONFIG') or'default')
 
 migrate = Migrate(app, db)
 

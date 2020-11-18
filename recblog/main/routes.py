@@ -1,7 +1,18 @@
-from flask import request, render_template, redirect, url_for, make_response
+from flask import request, render_template, redirect, url_for, make_response, current_app, abort
 from flask_login import login_required, current_user
 from . import main
 from ..models import Post
+
+
+@main.route('/shutdown')
+def server_shutdown():
+    if not current_app.testing:
+        abort(404)
+    shutdown = request.environ.get('werkzeug.server.shutdown')
+    if not shutdown:
+        abort(500)
+    shutdown()
+    return "Shutting  down MyRecipesBlog..."
 
 
 @main.route('/')
