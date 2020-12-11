@@ -40,7 +40,7 @@ class FlaskClientTestCase(unittest.TestCase):
                                     follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertFalse(re.search('Posts by followed Users', response.get_data(as_text=True)))
-        self.assertTrue( re.search('Dear Suesan', response.get_data( as_text=True)))
+        self.assertTrue(re.search('Dear Suesan', response.get_data(as_text=True)))
         self.assertTrue('Check your inbox,' in response.get_data(as_text=True))
 
         # confirmation of the account with token

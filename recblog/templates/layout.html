@@ -12,6 +12,8 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <!-- Font Awsome link -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.13.0/css/all.css">
 
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main.css') }}">
 
@@ -67,6 +69,9 @@
               {% if current_user.can(Permission.MODERATE) %}
                 <a class="nav-item nav-link" href="{{ url_for('admins.moderate') }}">Moderate Comment</a>
               {% endif %}
+              {% if current_user.can(Permission.ADMIN) %}
+                <a class="nav-item nav-link" href="/admin">Admin</a>
+              {% endif %}
               {% if current_user.is_authenticated %}
                 <a class="nav-item nav-link" href="{{ url_for('posts.new_post') }}">Post Recipe</a>
                 <a class="nav-item nav-link" href="{{ url_for('users.account') }}">Account</a>
@@ -91,8 +96,11 @@
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
-                            <div class="alert alert-{{ category }}">
+                            <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
                                 {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                  <span aria-hidden="true">&times;</span>
+                                </button>
                             </div>
                         {% endfor %}
                     {% endif %}

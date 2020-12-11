@@ -3,10 +3,9 @@ from flask import render_template, request, url_for, redirect, flash, abort, cur
 from flask_login import current_user, login_required
 from .. import db
 from . import posts
-from ..models import Permission, Post, Comment
+from ..models import Permission, Post, Comment, FavoritePosts
 from .forms import PostForm, CommentForm
 from .utils import save_picture
-
 
 
 @posts.route("/post/new", methods=['GET', 'POST'])
@@ -19,14 +18,17 @@ def new_post():
             p_image = picture_file
         elif not form.post_picture.data:
             p_image = os.path.join(current_app.root_path, 'static/post_pictures', 'default.jpg')
-        post = Post(title=form.title.data, description=form.description.data, post_image=p_image, portions=form.portions.data,
-                    prep_time=form.prep_time.data, type_category=form.type_category.data, ingredients=form.ingredients.data, preparation=form.preparation.data, author=current_user)
+        post = Post(title=form.title.data, description=form.description.data, post_image=p_image,
+                    portions=form.portions.data, recipe_yield=form.recipe_yield.data, cook_time=form.cook_time.data,
+                    prep_time=form.prep_time.data, ready=form.ready_in.data, type_category=form.type_category.data,
+                    main_ingredient = form.main_ingredient.data, ingredients=form.ingredients.data,
+                    preparation=form.preparation.data, author=current_user)
         db.session.add(post)
         db.session.commit()
         flash("Your post has been created!", 'success')
         return redirect(url_for('main.home'))
 
-    return render_template('create_post.html', title='Post Recipe', form=form, legend='Post Recipe')
+    return render_template('create_post.html', title='Post New Recipe', form=form, legend='Post New Recipe')
 
 
 # render template by given id of the post
@@ -51,6 +53,31 @@ def post(post_id):
                            comments=comments, pagination=pagination)
 
 
+@posts.route("/add_post_to_favorite/<int:post_id>")
+@login_required
+def add_post_to_favorite(post_id):
+    post = Post.query.get_or_404(post_id)
+    favorite = FavoritePosts(user=current_user, post=post)
+    db.session.add(favorite)
+    db.session.commit()
+    flash('Successfully added to favorites', 'success')
+    return redirect(url_for('posts.post', post_id=post.id))
+
+
+@posts.route("/delete_post_from_favorite/<int:post_id>")
+@login_required
+def delete_post_from_favorite(post_id):
+    post = Post.query.get_or_404(post_id)
+    favorite = FavoritePosts(user=current_user, post=post)
+    if not favorite:
+        flash('You have not added this recipe to your favorites!')
+        redirect(url_for('posts.post', post_id=post.id))
+    post.delete_post_from_favorites(user_id=current_user.id)
+    db.session.commit()
+    flash('Successfully removed from favorites!', 'success')
+    return redirect(url_for('posts.post', post_id=post.id))
+
+
 @posts.route("/post/<int:post_id>/update", methods=["GET", "POST"])
 @login_required
 def update_post(post_id):
@@ -63,19 +90,19 @@ def update_post(post_id):
             picture_file = save_picture(form.post_picture.data)
             p_image = picture_file
         elif not form.post_picture.data:
-            p_image = os.path.join(current_app.root_path, 'static/post_pictures', 'default.jpg')
+            p_image = post.post_image
         post.title = form.title.data
         post.description = form.description.data
         post.post_image = p_image
         post.portions = form.portions.data
+        post.recipe_yield = form.recipe_yield.data
+        post.cook_time = form.cook_time.data
         post.prep_time = form.prep_time.data
+        post.ready = form.ready_in.data
         post.type_category = form.type_category.data
+        post.main_ingredient = form.main_ingredient.data
         post.ingredients = form.ingredients.data
         post.preparation = form.preparation.data
-        # post = Post(title=form.title.data, description=form.description.data, post_image=p_image,
-        #              portions=form.portions.data,
-        #              prep_time=form.prep_time.data, type_category=form.type_category.data,
-        #              ingredients=form.ingredients.data, preparation=form.preparation.data, author=current_user)
         db.session.commit()
         flash('Your post has been updated!', 'success')
         return redirect(url_for('posts.post', post_id=post.id))
@@ -84,11 +111,16 @@ def update_post(post_id):
         form.description.data = post.description
         post_image = url_for('static', filename='post_pictures/' + post.post_image)
         form.portions.data = post.portions
+        form.recipe_yield.data = post.recipe_yield
+        form.cook_time.data = post.cook_time
         form.prep_time.data = post.prep_time
+        form.ready_in.data = post.ready
         form.type_category.data = post.type_category
+        form.main_ingredient.data = post.main_ingredient
         form.ingredients.data = post.ingredients
         form.preparation.data = post.preparation
-    return render_template('create_post.html', title='Update Recipe', form=form, legend='Update Recipe', post_image=post_image)
+    return render_template('create_post.html', title='Update Recipe', form=form, legend='Update Recipe',
+                           post_image=post_image)
 
 
 @posts.route("/post/<int:post_id>/delete", methods=["POST"])

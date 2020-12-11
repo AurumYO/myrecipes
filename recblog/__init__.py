@@ -1,5 +1,5 @@
-import os
 from flask import Flask
+from sqlalchemy import MetaData
 from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
@@ -9,8 +9,17 @@ from flask_login import LoginManager
 from config import config
 from flask_moment import Moment
 
+
+naming_convention = {
+    "ix": 'ix_%(column_0_label)s',
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(column_0_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s"
+}
+
 mail = Mail()
-db = SQLAlchemy()
+db = SQLAlchemy(metadata=MetaData(naming_convention=naming_convention))
 
 
 admin = Admin()    ## , name='myrecipes', template_mode='bootstrap4'

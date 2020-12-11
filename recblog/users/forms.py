@@ -27,8 +27,7 @@ class RegistrationForm(FlaskForm):
 
 class UpdateUserForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=3, max=24)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    picture = FileField('Update Profile Picture', validators=[FileAllowed(['jpg', 'png'])])
+    picture = FileField('Update Profile Picture', validators=[FileAllowed(['png', 'jpg', 'jpeg', 'gif'])])
     location = StringField('Location', validators=[Length(min=2, max=24)])
     about_me = TextAreaField('About me')
     submit = SubmitField('Update Profile')
@@ -39,11 +38,17 @@ class UpdateUserForm(FlaskForm):
             if user:
                 raise ValidationError('Please choose a different username.')
 
+
+# form for updating youser's email
+class UpdateUserEmail(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Update Email')
+    
+    # function checks if new email entered in the form has not been assigned to other's user account already
     def validate_email(self, email):
         if email.data != current_user.email:
             user = User.query.filter_by(email=email.data).first()
-            if user:
-                raise ValidationError('Please choose a different email.')
+            if user:raise ValidationError('Please choose a different email.')
 
 
 class LoginForm(FlaskForm):

@@ -49,15 +49,19 @@ def update_post(post_id):
     if g.current_user != post.author and not g.current_user.can(Permission.ADMIN):
         return forbidden('Insufficient permission rights. You cannot edit this post.')
     # obtain new values of the posts fields
-    post.title = request.json.get('title', post.title)
+    post.title = request.json.get('name', post.title)
     post.description = request.json.get('description', post.description)
     # in 2021 release to improve update of the new pictures instead of existing
-    post.post_image = request.json.get('post_image', post.post_image)
+    post.post_image = request.json.get('image', post.post_image)
     post.portions = request.json.get('portions', post.portions)
-    post.prep_time = request.json.get('prep_time', post.prep_time)
-    post.type_category = request.json.get('type_category', post.type_category)
-    post.ingredients = request.json.get('ingredients', post.ingredients)
-    post.preparation = request.json.get('preparation', post.preparation)
+    post.recipe_yield = request.json.get('recipeYield', post.recipe_yield)
+    post.cook_time = request.json.get('cookTime', post.cook_time)
+    post.prep_time = request.json.get('prepTime', post.prep_time)
+    post.ready = request.json.get('ready', post.ready)
+    post.type_category = request.json.get('recipeCategory', post.type_category)
+    post.main_ingredient = request.json.get('main_ingredient', post.main_ingredient)
+    post.ingredients = request.json.get('recipeIngredient', post.ingredients)
+    post.preparation = request.json.get('recipeInstructions', post.preparation)
     # save updated values of the post fields to the database
     db.session.commit()
     return jsonify(post.convert_post_json())

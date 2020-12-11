@@ -66,10 +66,10 @@ def get_user_followers(id):
     user = User.query.get_or_404(id)
     if not user:
         return bad_request("Some error happened while processing your request.")
-    page = request.args.get( 'page', 1, type=int )
+    page = request.args.get('page', 1, type=int)
     pagination = user.followers.paginate(page,
                                          per_page=current_app.config['MYRECBLOG_FOLLOWERS_PER_PAGE'],
-                                         error_out=False )
+                                         error_out=False)
     prev = None
     if pagination.has_prev:
         prev = url_for('api.user_followers', id=id, page=page - 1)

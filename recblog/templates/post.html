@@ -17,7 +17,21 @@
             <p class="article-content">{{ post.description }}</p>
             <img class="img-thumbnail" src=" {{ post_image }}">
               <p class="article-content">{{ moment(post.date_posted).format("LLL") }}</p>
+              <span style="font-size: 48px; color: Dodgerblue;">
+                  {% if current_user.is_authenticated %}
+                      {% if not post.is_favored_by_user(current_user) %}
+                      <a class="btn btn-default btn-xs" href="{{ url_for('posts.add_post_to_favorite', post_id=post.id) }}">Bite ME!</a>
+                      {% else %}
+                      <a href="{{ url_for('.delete_post_from_favorite', post_id=post.id) }}" class="btn btn-primary">Remove from Bites!</a>
+                      {% endif %}
+                  {% endif %}
+                  <i class="fas fa-drumstick-bite">: {{ post.favored.count() }}</i>
+              </span>
+
               <p class="article-content">{{ post.portions }}</p>
+              <span style="font-size: 48px; color: Dodgerblue;">
+                  <i class="far fa-clock">{{ post.cook_time }}</i>
+              </span>
               <p class="article-content">{{ post.prep_time }}</p>
               <p class="article-content">{{ post.type_category }}</p>
               {% if post.ingredients_html %}
@@ -26,7 +40,7 @@
                 <p class="article-content">{{ post.ingredients }}</p>
               {% endif %}
               <h3 class="article-title">Preparation method:</h3>
-              {% if post.preparation_html %}
+              {% if post.preparation_on_changed_commenthtml %}
                 <p class="article-content">{{ post.preparation_html | safe }}</p>
               {% else %}
                 <p class="article-content">{{ post.preparation }}</p>
@@ -42,6 +56,7 @@
         </div>
         </article>
     {% include "_post.html" %}
+
 
 <!-- Modal -->
     <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModal" aria-hidden="true">
@@ -69,6 +84,7 @@
     </div>
 
 <h4 id="comments">Comments</h4>
+
 {% if current_user.can(Permission.COMMENT) %}
 <div class="comment-form">
     <form method="POST" action="">

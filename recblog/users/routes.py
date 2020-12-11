@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from . import users
 from .. import db, bcrypt
 from ..models import User, Post, Permission
-from .forms import RegistrationForm, LoginForm, UpdateUserForm, RequestResetForm, ResetPasswordForm
+from .forms import RegistrationForm, LoginForm, UpdateUserForm, RequestResetForm, ResetPasswordForm, UpdateUserEmail
 from .utils import send_reset_email, send_confirmation_email, add_profile_pic
 from recblog.content_management.decorators import permission_required
 
@@ -92,7 +92,6 @@ def update_account(user_id):
             pic = add_profile_pic(form.picture.data, username)
             current_user.image_file = pic
         current_user.username = form.username.data
-        current_user.email = form.email.data
         current_user.location = form.location.data
         current_user.about_me = form.about_me.data
         db.session.commit()
@@ -100,11 +99,40 @@ def update_account(user_id):
         return redirect(url_for('users.account'))
     elif request.method == 'GET':
         form.username.data = current_user.username
-        form.email.data = current_user.email
         form.location.data = current_user.location
         form.about_me.data = current_user.about_me
     image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
     return render_template('update_account.html', title='Account', image_file=image_file, form=form)
+
+
+@users.route("/update_email/<int:user_id>", methods=["GET", "POST"])
+@login_required
+def update_email(user_id):
+    form = UpdateUserEmail()
+    if form.validate_on_submit():
+        new_email = form.email.data
+        token = current_user.generate_email_change_token(new_email)
+        send_confirmation_email(new_email, 'Confirm Your new email with Recipes', 'confirm_email', user=current_user, token=token)
+        current_user.email = new_email
+        current_user.confirmed = False
+        db.session.commit()
+        flash("Your email has been change. Please check your email for further instructions!", 'success')
+        return redirect(url_for('users.account'))
+    elif request.method == 'GET':
+        form.email.data = current_user.email
+    image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
+    return render_template('update_email.html', title='Update Email', form=form, image_file=image_file)
+
+
+@users.route("/update_email/<token>")
+@login_required
+def change_email(token):
+    if current_user.confirm_email(token):
+        db.session.commit()
+        flash("You have sucessfully confirmed your new email.", 'success')
+    else:
+        flash("The confirmation link is expired or not valid. Please, contact site administrator via Contact Form.", 'danger')
+    return redirect(url_for('main.home'))
 
 
 @users.route("/user_posts/<string:username>")
@@ -193,7 +221,15 @@ def follow_user(username):
 @permission_required(Permission.FOLLOW)
 def stop_follow_user(username):
     user = User.query.filter_by(username=username).first()
-
+    if user is None:
+        flash('Invalid user', 'danger')
+        return redirect(url_for('main.home'))
+    if not current_user.is_following_user(user):
+        flash(f"You are not following {user.username}.", 'info')
+        return redirect(url_for('users.user_account', username=username))
+    current_user.stop_follow_user(user)
+    db.session.commit()
+    flash(f"You have stopped following {user.username} from now on.", 'info' )
     return redirect(url_for('.user_account', username=username))
 
 

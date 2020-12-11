@@ -1,7 +1,16 @@
+from flask_sqlalchemy import get_debug_queries
 from flask import request, render_template, redirect, url_for, make_response, current_app, abort
 from flask_login import login_required, current_user
 from . import main
 from ..models import Post
+
+
+@main.after_app_request
+def after_request(response):
+    for query in get_debug_queries():
+        if query.duration >= current_app.config['MYRECBLOG_SLOW_DB_QUERY_TIME']:
+            current_app.logger.warning(f'Slow query: {query.statement}\nParameters: {query.parameters}\nDuration: {query.duration}\nContext: {query.context}\n')
+    return response
 
 
 @main.route('/shutdown')
@@ -12,7 +21,7 @@ def server_shutdown():
     if not shutdown:
         abort(500)
     shutdown()
-    return "Shutting  down MyRecipesBlog..."
+    return 'Shutting  down MyRecipesBlog...'
 
 
 @main.route('/')

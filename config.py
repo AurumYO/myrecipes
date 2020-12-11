@@ -16,13 +16,15 @@ class Config:
 
     # SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_RECORD_QUERIES = True
+    MYRECBLOG_SLOW_DB_QUERY_TIME = 0.5
 
     MYRECBLOG_POSTS_PER_PAGE = 12
     MYRECBLOG_COMMENTS_PER_PAGE = 20
     MYRECBLOG_FOLLOWERS_PER_PAGE = 50
     MYRECBLOG_FOLLOWED_PER_PAGE = 50
 
-
+    
     @staticmethod
     def init_app(app):
         pass
@@ -38,6 +40,8 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or 'sqlite:///'
     WTF_CSRF_ENABLED = False
+    PRESERVE_CONTEXT_ON_EXCEPTION = False
+    LIVESERVER_PORT = 0
 
 
 config = {

@@ -1,12 +1,13 @@
 from datetime import datetime
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from flask import current_app, request, url_for
-from flask_login import UserMixin, AnonymousUserMixin
+from flask import current_app, url_for, abort
+from flask_login import UserMixin, AnonymousUserMixin, current_user
 from flask_bcrypt import generate_password_hash, check_password_hash
 from markdown import markdown
 import bleach
 from . import db, login_manager
 from recblog.exceptions import ValidationError
+from flask_admin.contrib.sqla import ModelView
 
 
 class Permission:
@@ -115,18 +116,12 @@ class User(db.Model, UserMixin):
                                backref=db.backref('follower', lazy='joined'),
                                lazy='dynamic', cascade='all, delete-orphan')
     followers = db.relationship('Follow', foreign_keys=[Follow.followed_id],
-                               backref=db.backref('followed', lazy='joined'),
-                               lazy='dynamic', cascade='all, delete-orphan')
+                                backref=db.backref('followed', lazy='joined'),
+                                lazy='dynamic', cascade='all, delete-orphan')
 
     comments = db.relationship('Comment', backref='author', lazy='dynamic')
 
-    # @staticmethod
-    # def add_self_follower():
-    #     for user in User.query.all():
-    #         if not user.is_following_user(user):
-    #             user.follow_user(user)
-    #             db.session.add(user)
-    #             db.session.commit()
+    favored_posts = db.relationship('FavoritePosts', backref='liker', lazy='dynamic')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -135,7 +130,6 @@ class User(db.Model, UserMixin):
                 self.role = Role.query.filter_by(name='Administrator').first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
-
 
     def __repr__(self):
         return f"""User('{self.username}', '{self.email}', '{self.image_file}')"""
@@ -163,6 +157,26 @@ class User(db.Model, UserMixin):
             return False
         if data.get('confirm') != self.id:
             return False
+        self.confirmed = True
+        db.session.add(self)
+        return True
+
+    def generate_email_change_token(self, new_mail, expires_sec=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expires_sec)
+        return s.dumps({'change_email': self.id, 'new_email': new_mail}).decode('utf-8')
+
+    def confirm_email(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token.encode('utf-8'))
+        except ValidationError:
+            return False
+        if data.get('change_email') != self.id:
+            return False
+        new_email = data.get('new_email')
+        if new_email is None:
+            return False
+        self.email = new_email
         self.confirmed = True
         db.session.add(self)
         return True
@@ -214,7 +228,7 @@ class User(db.Model, UserMixin):
     def is_followed_by_user(self, user):
         if user.id is None:
             return False
-        return self.follower.filter_by(follower_id=user.id).first() is not None
+        return self.followers.filter_by(follower_id=user.id).first() is not None
 
     @property
     def followed_posts(self):
@@ -234,7 +248,8 @@ class User(db.Model, UserMixin):
             'followers_number': self.followers.count(),
             'followed_number': self.followed.count(),
             'post_count': self.posts.count(),
-            'comments_total': self.comments.count()
+            'comments_total': self.comments.count(),
+            'favorite_posts_total': self.favored_posts.count()
         }
         if include_email:
             json_user['email'] = self.email
@@ -245,6 +260,14 @@ class User(db.Model, UserMixin):
         user = json_user.get()
         return User(username=user['username'], email=user['email'], password=generate_password_hash(user['password']))
 
+
+class RecblogAdmin(ModelView):
+    def is_accessible(self):
+        if current_user.can(Permission.ADMIN):
+            return True
+        else:
+            return abort(404)
+            
 
 class AnonymousUser(AnonymousUserMixin):
     def can(self, permissions):
@@ -261,7 +284,6 @@ login_manager.anonymous_user = AnonymousUser
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-
 # Model for Posts Recipes
 class Post(db.Model, UserMixin):
     __tablename__ = 'posts'
@@ -271,13 +293,16 @@ class Post(db.Model, UserMixin):
     post_image = db.Column(db.String(200), nullable=False, default='default.jpg')
 
     # additional parameters of the post-recipe, right-side part of the post page
-    rating = db.Column(db.Integer, default=0)   ## not implemented yet
     date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    portions = db.Column(db.Integer, nullable=False)
-    prep_time = db.Column(db.Integer, nullable=False)
+    portions = db.Column(db.String(20), nullable=False)
+    recipe_yield = db.Column(db.String(40))
 
+    cook_time = db.Column(db.String(30), nullable=False)
+    prep_time = db.Column(db.String(30))
+    ready = db.Column(db.String(30))
     # type of dish - breakfast, dessert, soup, etc.
     type_category = db.Column(db.String(20), nullable=False)
+    main_ingredient = db.Column(db.String(20))
 
     # post-recipe ingredients and recipe
     ingredients = db.Column(db.Text, nullable=False)
@@ -287,10 +312,13 @@ class Post(db.Model, UserMixin):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
     # one-to-many relationships with Comments table
-    comments = db.relationship('Comment', backref='post', lazy='dynamic')  #'dynamic')
+    comments = db.relationship('Comment', backref='post', lazy='dynamic')
+    # rating
+    favored = db.relationship('FavoritePosts', backref='post_favorite', lazy='dynamic')
 
     def __repr__(self):
         return f"""User('{self.title}', '{self.date_posted}')"""
+
 
     @staticmethod
     def on_changed_ingredients(target, new_value, old_value, initiator):
@@ -304,61 +332,110 @@ class Post(db.Model, UserMixin):
         allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code', 'em', 'i', 'li', 'ol', 'pre', 'strong',
                         'ul', 'h1', 'h2', 'h3', 'p']
         target.preparation_html = bleach.linkify(bleach.clean(markdown(new_value, output_format='html'),
-                                                             tags=allowed_tags, strip=True))
+                                                              tags=allowed_tags, strip=True))
 
-    def rate_recipe(self, rate):
-        pass
+    def delete_post_from_favorites(self, user_id):
+        favorite = self.favored.filter_by(liker_id=user_id).first()
+        if favorite:
+            db.session.delete(favorite)
 
+    def is_favored_by_user(self, user):
+        if user.id is None:
+            return False
+        return self.favored.filter_by(liker_id=user.id).first() is not None
+
+    @property
+    def post_liked_by_user(self, user, post):
+        return FavoritePosts.query.filter_by(liker_id=user.id, post_id=post.id)
+
+    # JSON keys were written in accordance with recommendations for instances of Recipes form by https://schema.org/
     def convert_post_json(self):
         json_post = {
             'url': url_for('api.get_post', post_id=self.id),
-            'title': self.title,
+            'name': self.title,
             'description': self.description,
-            'post_image': self.post_image,
-            'rating': self.rating,
-            'date_posted': self.date_posted,
+            'image': self.post_image,
+            'datePublished': self.date_posted,
             'portions': self.portions,
-            'prep_time': self.prep_time,
-            'type_category': self.type_category,
-            'ingredients': self.ingredients,
-            'ingredients_html': self.ingredients_html,
-            'preparation': self.preparation,
-            'preparation_html': self.preparation_html,
+            'recipeYield': self.recipe_yield,
+            'cookTime': self.cook_time,
+            'prepTime': self.prep_time,
+            'ready': self.ready,
+            'recipeCategory': self.type_category,
+            'main_ingredient': self.main_ingredient,
+            'recipeIngredient': self.ingredients,
+            'recipeIngredient_html': self.ingredients_html,
+            'recipeInstructions': self.preparation,
+            'recipeInstructions_html': self.preparation_html,
             'user_url': url_for('api.get_user', user_id=self.user_id),
             'comments_url': url_for('api.get_post', post_id=self.id),
-            'comments_count': self.comments.count()
+            'comments_count': self.comments.count(),
+            'favored': self.favored.count()
         }
         return json_post
 
     @staticmethod
     def convert_post_from_json(json_post):
-        post_title = json_post.get('title')
+        post_title = json_post.get('name')
         if post_title is None or post_title == '':
             raise ValidationError('There is no such post!')
         post_description = json_post.get('description')
         if post_description is None or post_description == '':
             raise ValidationError('There is no such description!')
+        post_image = json_post.get('image')
         post_portions = json_post.get('portions')
         if post_portions is None or post_portions == '':
             raise ValidationError('There is no such portion!')
-        post_prep_time = json_post.get('prep_time')
-        if post_prep_time is None or post_prep_time == '':
-            raise ValidationError('There is no such prep_time!')
-        post_type_category = json_post.get('type_category')
+        recipe_yield = json_post.get('recipeYield')
+        cook_time = json_post.get('cookTime')
+        if cook_time is None or cook_time == '':
+            raise ValidationError('You should input some value for cooking time!' )
+        prep_time = json_post.get('prepTime')
+        ready = json_post.get('ready')
+        post_type_category = json_post.get('recipeCategory')
         if post_type_category is None or post_type_category == '':
             raise ValidationError('There is no such type_category!')
-        post_ingredients = json_post.get('ingredients')
+        main_ingredient = json_post.get('main_ingredient')
+        post_ingredients = json_post.get('recipeIngredient')
         if post_ingredients is None or post_ingredients == '':
             raise ValidationError('There is no such ingredients!')
-        post_preparation = json_post.get('preparation')
+        post_preparation = json_post.get('recipeInstructions')
         if post_preparation is None or post_preparation == '':
             raise ValidationError('There is no such preparation!')
-        return Post(title=post_title, description=post_description, portions=post_portions, prep_time=post_prep_time,
-                    type_category=post_type_category, ingredients=post_ingredients, preparation=post_preparation)
+        return Post(title=post_title, description=post_description, post_image=post_image, portions=post_portions,
+                    recipe_yield=recipe_yield, cook_time=cook_time, prep_time=prep_time, ready=ready,
+                    type_category=post_type_category, main_ingredient = main_ingredient, ingredients=post_ingredients,
+                    preparation=post_preparation)
 
 
 db.event.listen(Post.ingredients, 'set', Post.on_changed_ingredients)
 db.event.listen(Post.preparation, 'set', Post.on_changed_preparation)
+
+
+# Model for Rating the Post-recipe
+class FavoritePosts(db.Model):
+    __tablename__ = 'favorites'
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    liker_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    like_post = db.Column(db.Integer)
+
+    def __init__(self, user, post):
+        if user:
+            self.liker_id = user.id
+            self.post_id = post.id
+            self.like_post = 1
+
+    def __repr__(self):
+        return f"""FavoritePosts {self.post_id} liked by user {self.liker_id} with {self.like_post}"""
+
+    def convert_favorites_json(self):
+        json_favorites = {
+            'parentItem': url_for('api.get_post', post_id=self.post_id),
+            'liker_url': url_for('api.get_user', user_id=self.liker_id),
+            'like_post': self.like_post
+        }
+        return json_favorites
 
 
 class Comment(db.Model):

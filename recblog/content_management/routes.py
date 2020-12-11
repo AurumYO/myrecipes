@@ -2,27 +2,27 @@ from flask import Blueprint, render_template, request, redirect, url_for, curren
 from flask_login import login_required
 from flask_admin.contrib.sqla import ModelView
 from .. import db, admin
-from ..models import Post, Permission, User, Comment
+from ..models import Post, Permission, User, Comment, RecblogAdmin, FavoritePosts
 from . import admins
 from .decorators import admin_required, permission_required
 
 
-## later replace with app.app_context_processor
 @admins.app_context_processor
 def inject_permissions():
     return dict(Permission=Permission)
 
 
-@admins.route('/admin')
-@login_required
-@admin_required
-def for_admins_only():
-    return 'For admins only!'
+# @admins.route('/admin/')
+# @login_required
+
+# @permission_required(Permission.ADMIN)
+# def admin_home():
 
 
-admin.add_view( ModelView(User, db.session))
-admin.add_view( ModelView(Post, db.session))
-admin.add_view(ModelView(Comment, db.session))
+admin.add_view(RecblogAdmin(User, db.session))
+admin.add_view(RecblogAdmin(Post, db.session))
+admin.add_view(RecblogAdmin(Comment, db.session))
+admin.add_view(RecblogAdmin(FavoritePosts, db.session))
 
 
 @admins.route('/moderate')
