@@ -18,7 +18,8 @@ def inject_permissions():
 # @permission_required(Permission.ADMIN)
 # def admin_home():
 
-
+# Flask Admin and Flask-SQLAlchemy initialization of full featured CRUD views to models stored in the
+# database tables User, Post, Comment and FavoritePosts
 admin.add_view(RecblogAdmin(User, db.session))
 admin.add_view(RecblogAdmin(Post, db.session))
 admin.add_view(RecblogAdmin(Comment, db.session))

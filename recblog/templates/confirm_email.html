@@ -1,0 +1,20 @@
+{% block app_content %}
+    <div class="col-sm-9">
+        <div class="contect-section">
+            <h1>Dear {{ user.username }},</h1>
+
+            <p>You have recieved this email because you have requested to update your registration email adress for Yura's Delicious Life Blog.</p>
+
+            <p>To confirm your new email  please <a href="{{ url_for('users.change_email', token=token, _external=True) }}">click here</a>.</p>
+
+            <p>If you have not send this request to update your registration email for  Yura's Delicious Life Blog,
+                please simply ignore this email</p>
+
+            <p>Sincerely,</p>
+
+            <p>Delicious Life Blog Team.</p>
+
+            <p>Note: replies to this email adress are not monitored.</p>
+        </div>
+    </div>
+{% endblock app_content %}

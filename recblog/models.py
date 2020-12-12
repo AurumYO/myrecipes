@@ -261,6 +261,7 @@ class User(db.Model, UserMixin):
         return User(username=user['username'], email=user['email'], password=generate_password_hash(user['password']))
 
 
+# Custom view model for Admin 
 class RecblogAdmin(ModelView):
     def is_accessible(self):
         if current_user.can(Permission.ADMIN):

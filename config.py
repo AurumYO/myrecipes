@@ -24,6 +24,8 @@ class Config:
     MYRECBLOG_FOLLOWERS_PER_PAGE = 50
     MYRECBLOG_FOLLOWED_PER_PAGE = 50
 
+    # set bootswatch theme for Flask Admin 
+    FLASK_ADMIN_SWATCH = 'journal'
     
     @staticmethod
     def init_app(app):

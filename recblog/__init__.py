@@ -22,7 +22,7 @@ mail = Mail()
 db = SQLAlchemy(metadata=MetaData(naming_convention=naming_convention))
 
 
-admin = Admin()    ## , name='myrecipes', template_mode='bootstrap4'
+admin = Admin(name='myrecipes admin', template_mode='bootstrap3') 
 
 bcrypt = Bcrypt()
 

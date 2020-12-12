@@ -1,0 +1,15 @@
+Dear {{ user.username }},
+
+Welcome to Yura's Delicious Life Blog!
+
+You have recieved this email because you have requested to update your registration email adress for Yura's Delicious Life Blog.
+
+To confirm your account, please click on the following link:
+
+{{ url_for('users.change_email', token=token, _external=True) }}
+
+Sincerely,
+
+Delicious Life Blog Team.
+
+Note: replies to this email address are not monitored.
