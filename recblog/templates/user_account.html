@@ -5,7 +5,7 @@
 
                 <legend class="border-bottom mb-4">Author Info</legend>
                     <div class="container">
-                             <img class="rounded-circle account-img" src="{{ image_file }}">
+                             <img class="rounded-circle account-img" src="{{ url_for('static', filename='uploads/profile_pics/' + user.image_file) }}" alt="{{ user.username }}">
                              <h1>{{ user.username }}</h1>
                     </div>
 

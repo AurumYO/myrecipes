@@ -1,8 +1,11 @@
 import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+# Configuration class provide configuration variables for the application
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'try-to-guess-me'
+
+    # mail server configuration
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 587
     MAIL_USE_TLS = True
@@ -11,21 +14,26 @@ class Config:
     MYRECBLOG_MAIL_SUBJECT_PREFIX = '[MYRECBLOG]'
     MYRECBLOG_MAIL_SENDER = 'MYRECBLOG admin <myrecblog@demo.com>'
 
-    MYRECBLOG_ADMIN = os.environ.get('MYRECBLOG_ADMIN')
-    MYRECBLOG_ADMIN_SWATCH = 'cerulean'
 
-    # SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+    # SQLALCHEMY basic configuration
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_RECORD_QUERIES = True
     MYRECBLOG_SLOW_DB_QUERY_TIME = 0.5
 
+    # Pagination configuration
     MYRECBLOG_POSTS_PER_PAGE = 12
     MYRECBLOG_COMMENTS_PER_PAGE = 20
     MYRECBLOG_FOLLOWERS_PER_PAGE = 50
     MYRECBLOG_FOLLOWED_PER_PAGE = 50
+    LATEST_PER_PAGE = 4
+    RECENT_PER_PAGE = 20
 
     # set bootswatch theme for Flask Admin 
     FLASK_ADMIN_SWATCH = 'journal'
+    MYRECBLOG_ADMIN = os.environ.get('MYRECBLOG_ADMIN')
+
+
+    
     
     @staticmethod
     def init_app(app):

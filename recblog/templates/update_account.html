@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block app_content %}
 <div class="col-sm-9">
-    <img class="rounded-circle account-img" src="{{ image_file }}">
+    <img class="rounded-circle account-img" src="{{ image_file }}" alt="{{ current_user.username }}">
             <form method="POST" action="" enctype="multipart/form-data">
             {{ form.hidden_tag() }}
             <fieldset class="form-group">

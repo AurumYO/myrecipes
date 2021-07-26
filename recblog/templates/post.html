@@ -1,23 +1,19 @@
 {% extends "layout.html"  %}}
 {% block app_content %}
-    <article class="media content-section">
-
-          <div class="media-body">
-            <div class="article-metadata">
-              <a class="mr-2" href=" {{ url_for('users.user_account', username=post.author.username) }}">{{ post.author.username }}</a>
-              <small class="text-muted">{{ post.date_posted.strftime('%Y-%m-%d') }}</small>
-              {% if post.author == current_user %}
-                <div>
-                    <a class="btn btn-secondary bt-sm mt-1 mb-1" href="{{ url_for('posts.update_post', post_id=post.id) }}">Update</a>
-                    <button type="button" class="btn btn-danger btn-sm m-1" data-toggle="modal" data-target="#deleteModal">Delete</button>
-                </div>
-              {% endif %}
-            </div>
-            <h2 class="article-title">{{ post.title }}</h2>
-            <p class="article-content">{{ post.description }}</p>
-            <img class="img-thumbnail" src=" {{ post_image }}">
-              <p class="article-content">{{ moment(post.date_posted).format("LLL") }}</p>
-              <span style="font-size: 48px; color: Dodgerblue;">
+<div class="col-sm-9">
+  <div class="col" class="gel-layout__item ">
+      <article class="media content-section">
+        {% if post.author == current_user or current_user.can(Permission.ADMIN)%}
+        <div>
+            <a class="btn btn-secondary bt-sm mt-1 mb-1" href="{{ url_for('posts.update_post', post_id=post.id) }}">Update</a>
+            <button type="button" class="btn btn-danger btn-sm m-1" data-toggle="modal" data-target="#deleteModal">Delete</button>
+        </div>
+      {% endif %}
+            <div class="media-body">
+              
+              <h1 class="article-title">{{ post.title }}</h1>
+              <div>
+                <span style="font-size: 25px; color: #3a1c17;">
                   {% if current_user.is_authenticated %}
                       {% if not post.is_favored_by_user(current_user) %}
                       <a class="btn btn-default btn-xs" href="{{ url_for('posts.add_post_to_favorite', post_id=post.id) }}">Bite ME!</a>
@@ -26,94 +22,139 @@
                       {% endif %}
                   {% endif %}
                   <i class="fas fa-drumstick-bite">: {{ post.favored.count() }}</i>
-              </span>
+                </span> 
+              </div>
 
-              <p class="article-content">{{ post.portions }}</p>
-              <span style="font-size: 48px; color: Dodgerblue;">
+              <div class="article-metadata">
+                <div>
+                  <img class="img-rounded profile-thumbnail" style="height:50px; border-radius: 50%; border: 1px solid #FEDE00;" 
+                      src="{{ url_for('static', filename='uploads/profile_pics/' + post.author.image_file) }}" alt="{{ post.author.username }}">
+                  <a class="mr-2" href=" {{ url_for('users.user_account', username=post.author.username) }}">{{ post.author.username }}</a>
+                </div>
+                <div>
+                  <small class="text-muted"> Shared recipe on {{ post.date_posted.strftime('%Y-%m-%d') }}</small>
+                </div>
+              </div>
+
+              <div class="post-footer">
+                <a href="{{ url_for('posts.post', post_id=post.id) }}#comments">
+                    <span class="label label-primary">
+                        {{ post.comments.count() }} Comments
+                    </span>
+                </a>
+              </div>
+
+              <div class="MoneyShot">
+                <img class="img-thumbnail"  src=" {{ post_image }}" alt="{{ post.title }}">
+                <p class="ImageCaption"><i>{{ post.type_category }}, {{ post.title }}</i></p>
+              </div>
+
+              <div>
+                <p class="article-content" class="IntroText">{{ post.description }}</p>
+              </div>
+
+              <div class="recipe-details">
+                <p class="article-content">Suitable for {{ post.portions }} portions</p>
+                <span style="font-size: 25px; color: #3a1c17;">
                   <i class="far fa-clock">{{ post.cook_time }}</i>
-              </span>
-              <p class="article-content">{{ post.prep_time }}</p>
-              <p class="article-content">{{ post.type_category }}</p>
-              {% if post.ingredients_html %}
-                <p class="article-content">{{ post.ingredients_html | safe }}</p>
-              {% else %}
-                <p class="article-content">{{ post.ingredients }}</p>
-              {% endif %}
-              <h3 class="article-title">Preparation method:</h3>
-              {% if post.preparation_on_changed_commenthtml %}
-                <p class="article-content">{{ post.preparation_html | safe }}</p>
-              {% else %}
-                <p class="article-content">{{ post.preparation }}</p>
-              {% endif %}
-          </div>
-
-        <div class="post-footer">
-            <a href="{{ url_for('posts.post', post_id=post.id) }}#comments">
-                <span class="label label-primary">
-                    {{ post.comments.count() }} Comments
                 </span>
-            </a>
+                <p class="article-content">{{ post.prep_time }}</p>
+                <p class="article-content">{{ post.type_category }}</p>
+                <p class="article-content">{{ moment(post.date_posted).format("LLL") }}</p>
+              </div> 
+
+                          
+              <div class="recipe-ingredients">
+                <div>
+                  <div>
+                    <h2>Ingredients:</h2>
+                      {% if post.ingredients_html %}
+                        <p class="article-content">{{ post.ingredients_html | safe }}</p>
+                      {% else %}
+                        <ol class="MethodWrapper">Hey no html {{ post.ingredients }}</ol>
+                      {% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="recipe-method">
+                <div>
+                  <div>
+                    <h2 class="article-title" class="SubHeader">Preparation method:</h2>
+
+                      {% if post.preparation_html %}
+                        <p class="article-content">{{ post.preparation_html | safe }}</p>
+                      {% else %}
+                        <ol class="MethodWrapper">{{ post.preparation }}</ol>
+                      {% endif %}
+
+                  </div>
+                </div>
+              </div>
+                
+            </div>         
+          </article>
         </div>
-        </article>
-    {% include "_post.html" %}
-
-
-<!-- Modal -->
-    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModal" aria-hidden="true">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="deleteModalLabel">Delete recipe?</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body">
-            Are you sure you want to delete this recipe?
-            Your followers will not be able to cook this delicious dish...
-            Click "Close" to keep the post, or "Delete" to permanently delete your post.
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            <form action=" {{ url_for('posts.delete_post', post_id=post.id) }}" method="POST">
-                <input class="btn btn-danger" type="submit" value="Delete">
-            </form>
+      
+      {% include "_post.html" %}
+      
+  <!-- Modal -->
+      <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModal" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="deleteModalLabel">Delete recipe?</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to delete this recipe?
+              Your followers will not be able to cook this delicious dish...
+              Click "Close" to keep the post, or "Delete" to permanently delete your post.
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <form action=" {{ url_for('posts.delete_post', post_id=post.id) }}" method="POST">
+                  <input class="btn btn-danger" type="submit" value="Delete">
+              </form>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-<h4 id="comments">Comments</h4>
+  <h4 id="comments">Comments</h4>
 
-{% if current_user.can(Permission.COMMENT) %}
-<div class="comment-form">
-    <form method="POST" action="">
-            {{ form.hidden_tag() }}
-            <fieldset class="form-group">
-                <legend class="border-bottom mb-6">Post your comment to this recipe!</legend>
-                <div class="form-group">
-                    {{ form.body.label(class="form-control-label") }}
+  {% if current_user.can(Permission.COMMENT) %}
+  <div class="comment-form">
+      <form method="POST" action="">
+              {{ form.hidden_tag() }}
+              <fieldset class="form-group">
+                  <legend class="border-bottom mb-6">Post your comment to this recipe!</legend>
+                  <div class="form-group">
+                      {{ form.body.label(class="form-control-label") }}
 
-                    {% if form.body.errors %}
-                        {{ form.body(class="form-control form-control-lg is-invalid") }}
-                        <div class="invalid-feedback">
-                            {% for error in form.body.errors %}
-                                <span>{{ error }}</span>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        {{ form.body(class="form-control form-control-lg") }}
-                    {% endif %}
-                </div>
-            </fieldset>
-            <div class="form-group">
-                {{ form.submit(class="btn btn-outline-info") }}
-            </div>
-    </form>
-</div>
-{% endif %}
+                      {% if form.body.errors %}
+                          {{ form.body(class="form-control form-control-lg is-invalid") }}
+                          <div class="invalid-feedback">
+                              {% for error in form.body.errors %}
+                                  <span>{{ error }}</span>
+                              {% endfor %}
+                          </div>
+                      {% else %}
+                          {{ form.body(class="form-control form-control-lg") }}
+                      {% endif %}
+                  </div>
+              </fieldset>
+              <div class="form-group">
+                  {{ form.submit(class="btn btn-outline-info") }}
+              </div>
+      </form>
+  </div>
+ {% endif %}
+
 {% include '_comments.html' %}
 
+</div>
 {% endblock app_content%}
 
 {% block scripts %}

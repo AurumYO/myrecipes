@@ -6,13 +6,13 @@
 
                 <legend class="border-bottom mb-4">Account Info</legend>
                     <div class="container">
-                             <img class="rounded-circle account-img" src="{{ image_file }}">
+                             <img class="rounded-circle account-img" style="height:150px; border-radius: 50%; border: 1px solid #FEDE00;" src="{{ image_file }}">
                              <h1>{{ user.username }}</h1>
                     </div>
 
                 <div class="container">
                     {% if user == current_user %}
-                    <p>Email: {{ user.email }}</p>
+                    <p type="email"> Email: {{ user.email }}</p>
                         <!-- Button trigger changeEmail -->
                         <button type="button" class="btn btn-primary"data-toggle="modal" data-target="#changeEmailModal">
                             Update Email
@@ -30,6 +30,7 @@
                 </div>
 
                 <div class="container">
+                
                     <p>Last seen: {{ moment(user.last_seen).fromNow(refresh=True) }}</p>
                 </div>
                 <div class="container">
@@ -40,7 +41,7 @@
                 </div>
 
                 {% if current_user.is_administrator() %}
-                    <p>Admin mail: <a href="mailto: {{ user.email }}">{{ user.email }}</a></p>
+                    <p>Admin mail: <a type="email" href="mailto: {{ user.email }}">{{ user.email }}</a></p>
                 {% endif %}
 
             </div>
@@ -74,4 +75,4 @@
         </div>
     </div>
 
-{% endblock app_content%}
+{% endblock app_content %}

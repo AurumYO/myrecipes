@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, curren
 from flask_login import login_required
 from flask_admin.contrib.sqla import ModelView
 from .. import db, admin
-from ..models import Post, Permission, User, Comment, RecblogAdmin, FavoritePosts
+from ..models import Post, Permission, User, Comment, FavoritePosts, RecblogAdminUser, RecblogAdminPost, RecblogAdmin
 from . import admins
 from .decorators import admin_required, permission_required
 
@@ -15,13 +15,11 @@ def inject_permissions():
 # @admins.route('/admin/')
 # @login_required
 
-# @permission_required(Permission.ADMIN)
-# def admin_home():
 
 # Flask Admin and Flask-SQLAlchemy initialization of full featured CRUD views to models stored in the
 # database tables User, Post, Comment and FavoritePosts
-admin.add_view(RecblogAdmin(User, db.session))
-admin.add_view(RecblogAdmin(Post, db.session))
+admin.add_view(RecblogAdminUser(User, db.session))
+admin.add_view(RecblogAdminPost(Post, db.session))
 admin.add_view(RecblogAdmin(Comment, db.session))
 admin.add_view(RecblogAdmin(FavoritePosts, db.session))
 

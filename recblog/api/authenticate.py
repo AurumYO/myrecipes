@@ -1,11 +1,12 @@
 from flask import g, jsonify
-from flask_httpauth import HTTPBasicAuth
+from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth
 from recblog.models import User
 from .. import bcrypt
 from . import api
 from recblog.api.errors import unauthorized, forbidden
 
 auth = HTTPBasicAuth()
+token_auth = HTTPTokenAuth()
 
 
 @auth.verify_password
@@ -29,11 +30,11 @@ def auth_error():
     return unauthorized('Invalid credentials.')
 
 
-@api.before_request
-@auth.login_required
-def before_request():
-    if not g.current_user.is_anonymous and not g.current_user.confirmed:
-        return forbidden('Unconfirmed account')
+# @api.before_request
+# @auth.login_required
+# def before_request():
+#     if not g.current_user.is_anonymous and not g.current_user.confirmed:
+#         return forbidden('Unconfirmed account')
 
 
 @api.route('/tokens/', methods=['POST'])

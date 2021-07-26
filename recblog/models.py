@@ -10,6 +10,29 @@ from recblog.exceptions import ValidationError
 from flask_admin.contrib.sqla import ModelView
 
 
+class PaginatedAPIMixin(object):
+    @staticmethod
+    def to_collection_dict(query, page, per_page, endpoint, **kwargs):
+        resources = query.paginate(page, per_page, False)
+        data = {
+            'items': [item.convert_user_json() for item in resources.items],
+            '_meta': {
+                'page': page,
+                'per_page': per_page,
+                'total_pages': resources.pages,
+                'total_items': resources.total
+                },
+            '_links': {
+                'self': url_for(endpoint, page=page, per_page=per_page, **kwargs),
+                'next': url_for(endpoint, page=page+1,
+                                per_page=per_page, **kwargs) if resources.has_next else None,
+                'prev': url_for(endpoint, page=page-1,
+                                per_page=per_page, **kwargs) if resources.has_prev else None
+            }
+        }
+        return data
+
+
 class Permission:
     FOLLOW = 1
     COMMENT = 2
@@ -96,7 +119,7 @@ class Follow(db.Model):
         return json_user
 
 
-class User(db.Model, UserMixin):
+class User(PaginatedAPIMixin, db.Model, UserMixin):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False, index=True)
@@ -255,20 +278,61 @@ class User(db.Model, UserMixin):
             json_user['email'] = self.email
         return json_user
 
-    @staticmethod
-    def convert_user_from_json(json_user):
-        user = json_user.get()
-        return User(username=user['username'], email=user['email'], password=generate_password_hash(user['password']))
+    # !TODO - add posibility to update profile picture
+    def convert_user_from_json(self, data, new_user=False):
+        for field in ['username', 'email', 'about_me', 'location']:
+            if field in data:
+                setattr(self, field, data[field])
+        if new_user and 'password' in data:
+            print('PASS', data['password'])
+            self.password = data['password']
+        
 
 
-# Custom view model for Admin 
+# Custom view model for Flask-Admin provides check if user, which is trying to access the Admin navigation menue,
+# has permission to acces Admin panel
 class RecblogAdmin(ModelView):
+
+    # check if user is authenticated and has Admin role
+    # if user is not authenticated and has no Admin role, it is redirected to 'Not found' 404.html route
     def is_accessible(self):
-        if current_user.can(Permission.ADMIN):
+        if current_user.is_authenticated and current_user.can(Permission.ADMIN):
             return True
         else:
             return abort(404)
-            
+
+
+# Custom view model for Flask-Admin provides check if user, which is trying to access the User view model 
+# in the Admin navigation menue, has permission to acces the User view model in Admin panel
+class RecblogAdminUser(ModelView):
+    # add column to custon searchable filter to User model view in Admin panel
+    column_filters = ['role']
+    # column_sortable_list = ('role')
+    
+
+    # check if user is authenticated and has Admin role
+    # if user is not authenticated and has no Admin role, it is redirected to 'Not found' 404.html route
+    def is_accessible(self):
+        if current_user.is_authenticated and current_user.can(Permission.ADMIN):
+            return True
+        else:
+            return abort(404)
+
+
+# Custom view model for Flask-Admin provides check if user, which is trying to access the Post view model 
+# in the Admin navigation menue, has permission to acces the User view model in Admin panel
+class RecblogAdminPost(ModelView):
+    # add column to custon searchable list to POst model view in Admin panel
+    column_searchable_list = ['user_id']
+
+    # check if user is authenticated and has Admin role
+    # if user is not authenticated and has no Admin role, it is redirected to 'Not found' 404.html route
+    def is_accessible(self):
+        if current_user.is_authenticated and current_user.can(Permission.ADMIN):
+            return True
+        else:
+            return abort(404)
+
 
 class AnonymousUser(AnonymousUserMixin):
     def can(self, permissions):

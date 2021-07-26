@@ -68,8 +68,8 @@ def logout():
 @login_required
 def account():
     user = User.query.filter_by(username=current_user.username).first_or_404()
-    image_file = url_for('static', filename='profile_pics/' + current_user.image_file )
-    return render_template('account.html', user=user, image_file=image_file)
+    image_file = url_for('static', filename='uploads/profile_pics/' + current_user.image_file )
+    return render_template('account.html', title="Account", user=user, image_file=image_file)
 
 
 @users.route('/user_account/<string:username>', methods=["GET"])
@@ -78,7 +78,7 @@ def user_account(username):
     user = User.query.filter_by(username=username).first_or_404()
     image_file = url_for('static', filename='profile_pics/' + user.image_file)
     posts = user.posts.order_by(Post.date_posted.desc()).all()
-    return render_template('user_account.html', user=user, image_file=image_file, posts=posts)
+    return render_template('user_account.html', title="User Account", user=user, image_file=image_file, posts=posts)
 
 
 
@@ -101,8 +101,8 @@ def update_account(user_id):
         form.username.data = current_user.username
         form.location.data = current_user.location
         form.about_me.data = current_user.about_me
-    image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
-    return render_template('update_account.html', title='Account', image_file=image_file, form=form)
+    image_file = url_for('static', filename='uploads/profile_pics/' + current_user.image_file)
+    return render_template('update_account.html', title='Update Account Info', image_file=image_file, form=form)
 
 
 @users.route("/update_email/<int:user_id>", methods=["GET", "POST"])
@@ -120,8 +120,8 @@ def update_email(user_id):
         return redirect(url_for('users.account'))
     elif request.method == 'GET':
         form.email.data = current_user.email
-    image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
-    return render_template('update_email.html', title='Update Email', form=form, image_file=image_file)
+    image_file = url_for('static', filename='uploads/profile_pics/' + current_user.image_file)
+    return render_template('update_email.html', title='Update Acount Email', form=form, image_file=image_file)
 
 
 @users.route("/update_email/<token>")
@@ -142,7 +142,7 @@ def user_posts(username):
     posts = Post.query.filter_by(author=user)\
         .order_by(Post.date_posted.desc())\
         .paginate(page=page, per_page=8)
-    return render_template('user_posts.html', posts=posts, user=user)
+    return render_template('user_posts.html', title="User Posts", posts=posts, user=user)
 
 
 @users.route("/reset_password", methods=["GET", "POST"])

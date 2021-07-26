@@ -21,7 +21,7 @@ class PostForm(FlaskForm):
     ready_in = StringField('Ready in: ', description="Can be: 'after 24 hour in the fridge', or 'After stops bubbling'")
     # type of dish - breakfast, dessert, soup, etc
     type_category = SelectField('Select type of recipe: ',
-                                choices=[('appetizer', 'Appetizer'), ('alcohol', 'Alcohol & cocktails'),
+                                choices=[('appetizer', 'Appetizers'), ('alcohol', 'Alcohol & cocktails'),
                                          ('bread', 'Bread'), ('breakfast','Breakfast'), ('cake', 'Cake'),
                                          ('casserole', 'Casserole'), ('chicken', 'Chicken'), ('cookies', 'Cookies'),
                                          ('desserts', 'Desserts'), ('dinner', 'Dinner'), ('lunch', 'Lunch'),

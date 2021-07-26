@@ -1,87 +1,138 @@
+.card-content-title{
+    color: #3a1c17; 
+}
+
+.btn-outline-info {
+  color:  #5a291a;
+  border-color:  #5a291a;
+}
+
+.btn-outline-info:hover {
+  background-color:  #ac9676;
+  border-color: #ac9676;
+}
+
+.btn-outline-success{
+  color: #5a291a;
+  border-color: #5a291a;
+  position: relative;
+  background: none;
+}
+
+.btn-outline-success:hover {
+  background-color:  #5a291a;
+  border-color: #5a291a;
+}
+
+
+.user-image {
+  width: 300px;
+  height: 300px;
+  border-radius: 50%; /*don't forget prefixes*/
+  background-image: url("path/to/image");
+  background-position: center center;
+  /* as mentioned by Vad: */
+  background-size: cover;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+
+
+/* Start of the MYRECIPIES project styling*/
+
+html,
 body {
-  background: #fafafa;
-  color: #333333;
-  margin-top: 5rem;
+  margin: 0;
+  padding: 0rem;
+  font-family: sans-serif;
+  background-color: #dfe4e0;
+  color: rgb(3, 0, 0);
 }
 
-h1, h2, h3, h4, h5, h6 {
-  color: #444444;
+main {
+  background-color:#dfe4e0;
+  margin-left: 5%;
 }
 
-.bg-steel {
-  background-color: #5f788a;
+.h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6 {
+  color:black;
 }
 
-.site-header .navbar-nav .nav-link {
-  color: #cbd5db;
+h1 {
+  margin-top:40px;
+  padding: 0 1rem;
 }
 
-.site-header .navbar-nav .nav-link:hover {
-  color: #ffffff;
+/* Overwrite default Bootstrap4 CSS for navigation bar*/
+.bg-light {
+  background-color:#C0CEC1!important;
 }
 
-.site-header .navbar-nav .nav-link.active {
-  font-weight: 500;
+/* Styles for carousel on the home page */
+.carousel-header {
+  color: black;
 }
 
-header {
-    padding: 2rem;
-    grid-column: 1 / 4;
+.carousel-header:hover {
+  color: black;
 }
-
-.content-section {
-  background: #ffffff;
-  padding: 10px 20px;
-  border: 1px solid #dddddd;
-  border-radius: 3px;
-  margin-bottom: 20px;
-}
-
-.article-title {
-  color: #444444;
-}
-
-a.article-title:hover {
-  color: #428bca;
-  text-decoration: none;
-}
-
-.article-content {
-  white-space: pre-line;
-}
-
-.article-img {
-  height: 65px;
-  width: 65px;
-  margin-right: 16px;
-}
-
-.article-metadata {
-  padding-bottom: 1px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid #e3e3e3
-}
-
-.article-metadata a:hover {
-  color: #333;
-  text-decoration: none;
-}
-
-.article-svg {
-  width: 25px;
-  height: 25px;
-  vertical-align: middle;
-}
-
-.account-img {
-  height: 125px;
-  width: 125px;
-  margin-right: 20px;
-  margin-bottom: 16px;
-}
-
-.account-heading {
-  font-size: 2.5rem;
+.carousel-description {
+  color: black;
 }
 
 
+#recent-recipes-grid > div {
+  background-color: #dfe4e0;
+  display: grid;
+  padding: 20px;
+  grid-column-gap: 20px;
+  grid-row-gap: 10px;
+  grid-template-columns: 25% 25% 25% 25%;
+}
+
+.recent-recipes-item {
+  background-color: rgb(139, 24, 24);
+  font-size: 20px;
+  padding: 20px;
+  text-align: center;
+}
+
+.card-deck {
+  background-color:#dfe4e0;
+}
+
+
+.recipe-ingredients {
+  list-style: none;
+  padding: 16px 0;
+}
+
+
+.recipe-method {
+  display: block;
+
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    padding-inline-start: 40px;
+}
+/* 
+@media screen and (min-width: 37.5em){
+ .gel-layout__item {
+    padding-left: 16px;
+}
+
+.gel-layout__item {
+  width: 100%;
+  display: inline-block;
+  padding-left: 8px;
+  text-align: left;
+  vertical-align: top;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-rendering: auto;
+} */

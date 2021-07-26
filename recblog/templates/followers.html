@@ -8,7 +8,7 @@
             <tr>
                 <td>
                     <a href="{{ url_for('users.user_account', username = follow.user.username) }}">
-                        <img class="img-rounded" src="{{ follow.user.image_file }}">
+                        <img class="img-rounded" src="{{ url_for('static', filename='uploads/profile_pics/' + follow.user.image_file) }}" alt="{{ follow.user.username }}">
                         {{ follow.user.username }}
                     </a>
                 </td>

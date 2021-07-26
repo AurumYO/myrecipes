@@ -1,28 +1,27 @@
 {% extends "layout.html" %}
 {% block app_content %}
-<div class="col-sm-9">
+
   <h1>Recent Recipes</h1>
     <div class="row">
-    {% for post in rec_posts.items %}
-        <div class="column col col-lg-3">
-
-                <div class="card-deck">
-                  <div class="card">
-                    <a href="{{ url_for('posts.post', post_id=post.id) }}">
-                      <img src="{{ url_for('static', filename='post_pictures/' + post.post_image) }}" class="card-img-top" alt="...">
-                    </a>
-                    <div class="card-body">
-                      <h5 class="card-title"><a href="{{ url_for('posts.post', post_id=post.id) }}">{{ post.title }}</a></h5>
-                      <p class="card-text">{{ post.description[:100] }}</p>
+        {% for post in rec_posts.items %}
+            <div class="column col col-lg-3">
+                    <div  class="card-deck">
+                      <div class="card h-100">
+                        <a href="{{ url_for('posts.post', post_id=post.id) }}">
+                          <img src="{{ url_for('static', filename='uploads/recipes_pics/' + post.post_image) }}" class="card-img-top" alt="...">
+                        </a>
+                        <div class="card-body">
+                          <h5 class="card-title"><a href="{{ url_for('posts.post', post_id=post.id) }}">{{ post.title[:35] }}</a></h5>
+                          <p class="card-text">{{ post.description[:20] }}</p>
+                        </div>
+                        <div class="card-footer">
+                          <small class="text-muted">{{ moment(post.date_posted).format("LLL") }}</small>
+                        </div>
+                      </div>
                     </div>
-                    <div class="card-footer">
-                      <small class="text-muted">{{ moment(post.date_posted).format("LLL") }}</small>
-                    </div>
-                  </div>
-                </div>
-        </div>
-    {% endfor %}
-    </div>
+            </div>
+        {% endfor %}
+  </div>
 
     <!-- Page Navigation -->
     {% for page_num in rec_posts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
@@ -36,5 +35,5 @@
                 ...
             {% endif %}
     {% endfor %}
-</div>
+
 {% endblock app_content%}

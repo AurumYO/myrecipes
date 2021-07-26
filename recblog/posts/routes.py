@@ -17,7 +17,7 @@ def new_post():
             picture_file = save_picture(form.post_picture.data)
             p_image = picture_file
         elif not form.post_picture.data:
-            p_image = os.path.join(current_app.root_path, 'static/post_pictures', 'default.jpg')
+            p_image = os.path.join(current_app.root_path, 'uploads/recipes_pics', 'default.jpg')
         post = Post(title=form.title.data, description=form.description.data, post_image=p_image,
                     portions=form.portions.data, recipe_yield=form.recipe_yield.data, cook_time=form.cook_time.data,
                     prep_time=form.prep_time.data, ready=form.ready_in.data, type_category=form.type_category.data,
@@ -35,7 +35,7 @@ def new_post():
 @posts.route("/post/<int:post_id>", methods=["GET", "POST"])
 def post(post_id):
     post = Post.query.get_or_404(post_id)
-    post_image = url_for('static', filename='post_pictures/' + post.post_image)
+    post_image = url_for('static', filename='uploads/recipes_pics/' + post.post_image)
     comments_form = CommentForm()
     if comments_form.validate_on_submit():
         comment = Comment(body=comments_form.body.data, post=post, author=current_user._get_current_object())
@@ -82,7 +82,7 @@ def delete_post_from_favorite(post_id):
 @login_required
 def update_post(post_id):
     post = Post.query.get_or_404(post_id)
-    if post.author != current_user or not current_user.can(Permission.ADMIN):
+    if post.user_id != current_user.id:
         abort(403)
     form = PostForm()
     if form.validate_on_submit():
@@ -131,15 +131,19 @@ def delete_post(post_id):
         abort(403)
     db.session.delete(post)
     db.session.commit()
-    flash('Your recipe has been deleted!')
+    flash('Your recipe has been deleted!', 'success')
     return redirect(url_for('main.home'))
 
 
 @posts.route('/recent_recipes')
 def recent_recipes():
     page = request.args.get('page', 1, type=int)
-    rec_posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=4)
+    rec_posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=current_app.config['RECENT_PER_PAGE'])
     return render_template('recent_recipes.html', title='Recent Recipes', rec_posts=rec_posts)
 
 
-
+@posts.route('/recipes/<string:category>',  methods=["GET"])
+def categorical_recipes(category):
+    page = request.args.get('page', 1, type=int)
+    category_posts = Post.query.filter_by(type_category=category).paginate(page=page, per_page=current_app.config['RECENT_PER_PAGE'])
+    return render_template('category_recipe.html', title=category.capitalize(), category_posts=category_posts)
