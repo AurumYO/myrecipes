@@ -4,6 +4,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 # Configuration class provide configuration variables for the application
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'try-to-guess-me'
+    JWT_SECRET_KEY = os.environ.get('SECRET_KEY') or 'try-to-guess-me'
 
     # mail server configuration
     MAIL_SERVER = 'smtp.gmail.com'
