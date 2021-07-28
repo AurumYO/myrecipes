@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from flask import jsonify, request, url_for, g, current_app
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity,\
+from flask_jwt_extended import jwt_required, get_jwt_identity,\
      get_jwt, unset_jwt_cookies
 from .. import db, bcrypt, jwt
 from ..models import User, Post, Permission, BlacklistToken
