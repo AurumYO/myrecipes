@@ -28,30 +28,83 @@ class APITestCase(unittest.TestCase):
                 'Content-Type': 'application/json'}
 
     def test_no_authentication(self):
-        response = self.client.get('api/v1/posts/', content_type='application/json')
+        # response = self.client.get('api/v1/posts/', content_type='application/json')
+        # self.assertEqual(response.status_code, 401)
+        response = self.client.get('api/v1/users/', content_type='application/json')
         self.assertEqual(response.status_code, 401)
 
     # test 404 response
     def test_404(self):
         response = self.client.get('/wrong/url', headers=self.get_api_headers('email', 'password'))
+        print(response.status_code)
         self.assertEqual(response.status_code, 404)
-        # json_response = json.loads(response.get_data(as_text=True))
-        # self.assertEqual(json_response['error'], 'Not Found')
 
-    def test_bad_authorization(self):
-        user_role = Role.query.filter_by(name='User').first()
-        self.assertIsNotNone(user_role)
-        u = User(username='Kiwi', email='kiwi@example.com', password=bcrypt.generate_password_hash('green'),
-                 confirmed=True, role=user_role)
-        db.session.add(u)
-        db.session.commit()
-        # authenticate with invalid password
-        response = self.client.get('/api/v1/posts/', headers=self.get_api_headers('kiwi@example.com', 'free'))
+    # test adding new users via API
+    def test_add_new_user(self):
+        response = self.client.post(f'/api/v1/new_user/',\
+             headers=self.get_api_headers('sue@example.com', 'foam'),\
+             data=json.dumps({'username': 'Suesan', 'email': 'sue@example.com',\
+                  'password': 'foam', 'about_me': 'JM', 'location': 'Here'}))
+        self.assertEqual(response.status_code, 200)
+
+    # test add new user without providing username
+    def test_add_new_user_without_required_fields(self):
+        response = self.client.post(f'/api/v1/new_user/',\
+             headers=self.get_api_headers('sue@example.com', 'foam'),\
+             data=json.dumps({'username': '', 'email': 'sue@example.com', 'password': 'foam',\
+                  'about_me': 'JM', 'location': 'Here'}))
+        self.assertEqual(response.status_code, 400)
+        response = self.client.post(f'/api/v1/new_user/',\
+             headers=self.get_api_headers('sue@example.com', 'foam'),\
+             data=json.dumps({'username': 'Suesan', 'email': '', 'password': 'foam',\
+                  'about_me': 'JM', 'location': 'Here'}))
+        self.assertEqual(response.status_code, 400)
+        response = self.client.post(f'/api/v1/new_user/',\
+             headers=self.get_api_headers('sue@example.com', 'foam'),\
+             data=json.dumps({'username': 'Suesan', 'email': 'sue@example.com',\
+                  'password': '', 'about_me': 'JM', 'location': 'Here'}))
+        self.assertEqual(response.status_code, 400)
+    
+    # test logout and token revoking
+    def test_logout(self):
+        response = self.client.post(f'/api/v1/new_user/',\
+             headers=self.get_api_headers('sue@example.com', 'foam'),\
+             data=json.dumps({'username': 'Suesan', 'email': 'sue@example.com', 'password': 'foam',\
+                  'about_me': 'JM', 'location': 'Here'}))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.delete(f'/api/v1/logout',\
+             headers=self.get_api_headers('sue@example.com', 'foam'),)
         self.assertEqual(response.status_code, 401)
 
-    def test_anonymous(self):
-        response = self.client.get('/api/v1/posts/', headers=self.get_api_headers('', ''))
-        self.assertEqual(response.status_code, 401)
+    # test login and authentication
+    def test_login_and_authentication(self):
+        response = self.client.post(f'/api/v1/new_user/',\
+             headers=self.get_api_headers('sue@example.com', 'foam'),\
+             data=json.dumps({'username': 'Suesan', 'email': 'sue@example.com',\
+                              'password': 'foam', 'about_me': 'JM',\
+                              'location': 'Here'}))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(f'/api/v1/login',\
+             headers=self.get_api_headers('sue@example.com', 'foam'),\
+             data=json.dumps({'email': 'sue@example.com', 'password': 'foam'}))
+        self.assertEqual(response.status_code, 200)
+
+    
+    # def test_bad_authorization(self):
+    #     user_role = Role.query.filter_by(name='User').first()
+    #     self.assertIsNotNone(user_role)
+    #     u = User(username='Kiwi', email='kiwi@example.com', password=bcrypt.generate_password_hash('green'),
+    #              confirmed=True, role=user_role)
+    #     db.session.add(u)
+    #     db.session.commit()
+    #     # authenticate with invalid password
+    #     response = self.client.get('/api/v1/posts/', headers=self.get_api_headers('kiwi@example.com', 'free'))
+    #     self.assertEqual(response.status_code, 401)
+
+    # def test_anonymous(self):
+    #     response = self.client.get('/api/v1/posts/', headers=self.get_api_headers('', ''))
+    #     self.assertEqual(response.status_code, 401)
 
     def test_token(self):
         # add test user
@@ -63,8 +116,8 @@ class APITestCase(unittest.TestCase):
         db.session.commit()
 
         # issue a request with bad token
-        response = self.client.get('/api/v1/posts/', headers=self.get_api_headers('bad bunny', ''))
-        self.assertEqual(response.status_code, 401)
+        # response = self.client.get('/api/v1/posts/', headers=self.get_api_headers('bad bunny', ''))
+        # self.assertEqual(response.status_code, 401)
 
         # issue a request with token
         response = self.client.post('/api/v1/tokens/', headers=self.get_api_headers('sweety@example.com', 'orange'))
@@ -88,8 +141,8 @@ class APITestCase(unittest.TestCase):
         db.session.commit()
 
         # get list of posts with unconfirmed account
-        response = self.client.get('/api/v1/posts/', headers=self.get_api_headers('janice@example.com', 'Chandler'))
-        self.assertEqual(response.status_code, 403)
+        # response = self.client.get('/api/v1/posts/', headers=self.get_api_headers('janice@example.com', 'Chandler'))
+        # self.assertEqual(response.status_code, 403)
 
     # testing post creation from registerred user with permission to create posts
     def test_posts(self):
@@ -164,31 +217,40 @@ class APITestCase(unittest.TestCase):
         self.assertEqual('http://localhost' + json_response['url'], url)
         self.assertEqual(json_response['name'], 'Updated Test recipe #1')
 
+    
+
+
+    
     # test users API response
     def test_users(self):
         # add test users to database
-        rl = Role.query.filter_by(name='User').first()
-        self.assertIsNotNone(rl)
-        u1 = User(username='Suesan', email='sue@example.com', password=bcrypt.generate_password_hash('foam'),
-                confirmed=True, role=rl )
-        db.session.add(u1)
-        u2 = User( username='Sam', email='sam@example.com', password=bcrypt.generate_password_hash('sand'),
-                   confirmed=True, role=rl, location='Kyiv')
-        db.session.add(u2)
-        u2.follow_user(u1)
-        db.session.commit()
+        response1 = self.client.post(f'/api/v1/new_user/',\
+             headers=self.get_api_headers('sue@example.com', 'foam'),\
+             data=json.dumps({'username': 'Suesan', 'email': 'sue@example.com',\
+                  'password': 'foam', 'about_me': 'JM', 'location': 'Here'}))
+        self.assertEqual(response1.status_code, 200)
+        response2 = self.client.post(f'/api/v1/new_user/',\
+             headers=self.get_api_headers('sam@example.com', 'sand'),\
+             data=json.dumps({'username': 'Sam', 'email': 'sam@example.com',\
+                  'password': 'sand', 'about_me': 'JSM', 'location': 'There'}))
+        self.assertEqual(response2.status_code, 200)
+        
+        # query the users in database
+        u1 = User.query.filter_by(username='Suesan').first()
+        u2 = User.query.filter_by(username='Sam').first()
+
         # get user info from database by another registered user
         response = self.client.get(f'/api/v1/user_account/{u1.id}',
-                                   headers=self.get_api_headers('sam@example.com', 'sand'))
+                                   headers=self.get_api_headers('sue@example.com', 'foam'))
         self.assertEqual(response.status_code, 200)
         json_response = json.loads(response.get_data(as_text=True))
         self.assertEqual(json_response['username'], 'Suesan')
         response = self.client.get(f'/api/v1/user_account/{u2.id}',
-                                   headers=self.get_api_headers('sue@example.com', 'foam'))
+                                   headers=self.get_api_headers('sam@example.com', 'sand'))
         self.assertEqual(response.status_code, 200)
         json_response = json.loads(response.get_data(as_text=True))
         self.assertEqual(json_response['username'], 'Sam')
-        self.assertEqual(json_response['location'], 'Kyiv')
+        self.assertEqual(json_response['location'], 'There')
 
         # test get by user info on own profile information
 

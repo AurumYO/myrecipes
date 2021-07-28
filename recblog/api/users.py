@@ -1,9 +1,18 @@
+from datetime import datetime, timezone
 from flask import jsonify, request, url_for, g, current_app
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from .. import db, bcrypt
-from ..models import User, Post, Permission
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity,\
+     get_jwt, unset_jwt_cookies
+from .. import db, bcrypt, jwt
+from ..models import User, Post, Permission, BlacklistToken
 from . import api
 from .errors import bad_request, forbidden
+
+# Callback function to check if a JWT exists in the database blocklist
+@jwt.token_in_blocklist_loader
+def check_if_token_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload["jti"]
+    token = db.session.query(BlacklistToken.id).filter_by(token=jti).scalar()
+    return token is not None
 
 
 @api.route('/user_account/<int:user_id>', methods=["GET"])
@@ -12,7 +21,6 @@ def get_user(user_id):
     current_user = get_jwt_identity()
     user = User.query.get_or_404(user_id)
     return jsonify(logged_in_as=current_user, user=user.convert_user_json()), 200
-    
 
 
 @api.route('/users/', methods=["GET", "POST"])
@@ -24,20 +32,20 @@ def get_all_users():
     return jsonify(data), 200
 
 
+# new user registration
 @api.route('/new_user/', methods=["POST"])
 def add_new_user():
     new_usr = request.get_json() or {}
-    new_usr['password'] = bcrypt.generate_password_hash(new_usr['password']).decode('utf-8')
-    print(new_usr)
-    if 'username' not in new_usr or 'email' not in new_usr or 'password' not in new_usr:
+    if 'username' not in new_usr or new_usr['username'] == '' or new_usr['email'] == '' or 'email' not in new_usr\
+            or new_usr['password'] == '' or 'password' not in new_usr:
         return bad_request("User must have username, email and password fields. Please check your input data.")
     if User.query.filter_by(username=new_usr['username']).first():
         return bad_request("Please choose other username.")
     if User.query.filter_by(email=new_usr['email']).first():
         return bad_request("Please choose other email.")
+    new_usr['password'] = bcrypt.generate_password_hash(new_usr['password']).decode('utf-8')
     user = User()
     user.convert_user_from_json(new_usr, new_user=True)
-    print('OK', user)
     db.session.add(user)
     db.session.commit()
     response = jsonify(user.convert_user_json())
@@ -156,3 +164,15 @@ def get_followed_posts(id):
                      'next_url': next,
                      'count': pagination.total
                      }), 200
+
+# logout user and expire token
+@api.route('/logout', methods=['DELETE'])
+@jwt_required()
+def logout():
+    token = get_jwt()["jti"]
+    db.session.add(BlacklistToken(token=token))
+    db.session.commit()
+    response = jsonify({"msg": "logout successful"})
+    unset_jwt_cookies(response)
+    print(response.status_code)
+    return response
