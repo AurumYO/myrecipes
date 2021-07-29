@@ -1,7 +1,7 @@
 from flask import jsonify, request, url_for, g, current_app, flash
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from .. import db
-from ..models import User, Post, Permission
+from ..models import User, Post, Permission, FavoritePosts
 from . import api
 from .utils import permission_required
 from .errors import bad_request, forbidden
@@ -104,3 +104,40 @@ def delete_post(post_id):
     db.session.delete(post)
     db.session.commit()
     return jsonify({'Status': 'Post has been deleted successfully.'}), 201
+
+
+# like the post
+@api.route('/post/<int:post_id>/like', methods=['PUT'])
+@jwt_required()
+def add_post_to_favorite(post_id):
+    post = Post.query.filter_by(id=post_id).first()
+    current_user = User.query.filter_by(email=get_jwt_identity()).first()
+    if not post:
+        return bad_request("Sorry, no such post!")
+    if FavoritePosts.query.filter_by(post_id=post.id, liker_id=current_user.id):
+        return bad_request("You already liked this post!")
+    favorite = FavoritePosts(current_user.id, post.id)
+    db.session.add(favorite)
+    db.session.commit()
+    return jsonify({
+                    'msg': 'Successfully added to favorites',
+                    'details': favorite.convert_favorites_json()
+                }), 200
+
+
+# unlike the post
+@api.route('/post/<int:post_id>/unlike', methods=['DELETE'])
+@jwt_required()
+def unlike_post(post_id):
+    post = Post.query.filter_by(id=post_id).first()
+    current_user = User.query.filter_by(email=get_jwt_identity()).first()
+    if not post:
+        return bad_request("Sorry, no such post!")
+    favorite = FavoritePosts.query.filter_by(post_id=post.id, liker_id=current_user.id)
+    if favorite:
+        return bad_request("You have not liked this post before to unlike!")
+    post.delete_post_from_favorites(current_user.id)
+    db.session.commit()
+    return jsonify({
+                    'msg': 'Successfully unliked the post!'
+                }), 200

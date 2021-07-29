@@ -500,11 +500,12 @@ class FavoritePosts(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
     liker_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     like_post = db.Column(db.Integer)
+    date_liked = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
-    def __init__(self, user, post):
-        if user:
-            self.liker_id = user.id
-            self.post_id = post.id
+    def __init__(self, user_id, post_id):
+        if user_id:
+            self.liker_id = user_id
+            self.post_id = post_id
             self.like_post = 1
 
     def __repr__(self):
@@ -514,7 +515,8 @@ class FavoritePosts(db.Model):
         json_favorites = {
             'parentItem': url_for('api.get_post', post_id=self.post_id),
             'liker_url': url_for('api.get_user', user_id=self.liker_id),
-            'like_post': self.like_post
+            'like_post': self.like_post,
+            'dateliked': self.date_liked
         }
         return json_favorites
 

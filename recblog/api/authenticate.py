@@ -4,10 +4,9 @@ from recblog.models import User
 from . import api
 from recblog.api.errors import unauthorized, forbidden
 
-
+# login user with JWT-token
 @api.route("/login", methods=["POST"])
 def login():
-    
     email = request.json.get("email", None)
     password = request.json.get("password", None)
     user = User.query.filter_by(email=email).first()
@@ -36,3 +35,5 @@ def login():
 #     except (RuntimeError, KeyError):
 #         # Case where there is not a valid JWT. Just return the original respone
 #         return response
+
+
