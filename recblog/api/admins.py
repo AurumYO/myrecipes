@@ -1,12 +1,11 @@
 from flask import jsonify, request, url_for, g, current_app, flash
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime, timedelta
-from sqlalchemy import extract, func
+from sqlalchemy import extract
 from .. import db
-from ..models import User, Post, Permission, FavoritePosts
+from ..models import User, Permission, FavoritePosts
 from . import api
 from .utils import permission_required
-from .errors import bad_request, forbidden
 
 
 # analytics on number of likes per date range

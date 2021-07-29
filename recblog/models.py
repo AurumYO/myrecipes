@@ -549,11 +549,11 @@ class Comment(db.Model):
         }
         return json_comment
 
-    def convert_from_json_comment(comment):
-        body = comment.get('body')
-        if body is None or body == '':
-            raise ValidationError('this post does not have a comment')
-        return Comment(body=body)
+    def convert_from_json_comment(self, data):
+        for field in ['body', 'post_id', 'author_id']:
+            if field in data:
+                setattr(self, field, data[field])
+        
 
 
 db.event.listen(Comment.body, 'set', Comment.on_changed_comment)
