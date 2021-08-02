@@ -2,7 +2,7 @@ import re
 import json
 from base64 import b64encode
 import unittest
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, get_jwt_identity, verify_jwt_in_request
 from recblog import create_app, db, bcrypt
 from recblog.models import Permission, Role, User, Comment, Post
 
@@ -182,64 +182,111 @@ class APITestCase(unittest.TestCase):
                   'password': 'dentas', 'about_me': 'RM-JM', 'location': 'Kyiv'}))
         self.assertEqual(response.status_code, 200)
 
+        # log in new registerred user_1, recive authorization token and create authorizatoin header
+        # for issueing new requests by user_1
+        response = self.client.post(f'/api/v1/login',\
+                                    headers=self.get_api_headers('sue@example.com', 'foam'),\
+                                    data=json.dumps({'email': 'sue@example.com', 'password': 'foam'}))
+        self.assertEqual(response.status_code, 200)
+        token_data_u1 = response.get_json('access_token')
+        self.assertTrue('access_token' in token_data_u1)
+        access_token_u1 = token_data_u1['access_token']
+        self.assertIsNotNone(access_token_u1)
+        access_headers_u1 = {'Authorization': 'Bearer {}'.format(access_token_u1)}
+        
         # write a post
-    #     response = self.client.post('api/v1/posts/', headers=self.get_api_headers('sue@example.com', 'foam'),
-    #                                 data=json.dumps({'name': 'Updated Test recipe #1',
-    #                                                  'description': 'Test description to the Test Title',
-    #                                                  'image': 'default.jpg', 'portions': 6, 'recipeYield': '12 pieces',
-    #                                                  'cookTime': '50', 'prepTime': 45, 'ready': 135,
-    #                                                  'recipeCategory': 'meat', 'main_ingredient': 'beef',
-    #                                                  'recipeIngredient': 'test post.recipeIngredient',
-    #                                                  'recipeInstructions': 'Test recipeInstructions'
-    #                                                  }))
-    #     self.assertEqual(response.status_code, 201)
-    #     url = response.headers.get('Location')
-    #     self.assertIsNotNone(url)
+        response = self.client.post('api/v1/post_new/',\
+                        headers=access_headers_u1,\
+                        data=json.dumps({'name': 'Test recipe #1',
+                                         'description': 'Test description to the Test Title',
+                                         'image': 'default.jpg', 'portions': 6,
+                                         'recipeYield': '12 pieces', 'cookTime': '50', 'prepTime': 45,
+                                         'ready': 135, 'recipeCategory': 'meat', 'main_ingredient': 'beef',
+                                         'recipeIngredient': 'test post.recipeIngredient',
+                                         'recipeInstructions': 'Test recipeInstructions'
+                                         }))
+        self.assertEqual(response.status_code, 201)
+        post_url = response.headers.get('Location')
+        self.assertIsNotNone(post_url)
 
-    #     # display the created post
-    #     response = self.client.get(url, headers=self.get_api_headers('sue@example.com', 'foam'))
-    #     self.assertEqual(response.status_code, 200)
-    #     json_response = json.loads(response.get_data(as_text=True))
-    #     self.assertEqual('http://localhost' + json_response['url'], url)
-    #     self.assertEqual(json_response['name'], 'Updated Test recipe #1')
-    #     self.assertEqual(json_response['prepTime'], '45')
-    #     self.assertEqual(json_response['recipeInstructions'], 'Test recipeInstructions')
-    #     self.assertEqual(json_response['recipeInstructions_html'], '<p>Test recipeInstructions</p>')
-    #     json_post = json_response
+        # display the created post
+        response = self.client.get(post_url, headers=access_headers_u1)
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertEqual('http://localhost' + json_response['url'], post_url)
+        self.assertEqual(json_response['name'], 'Test recipe #1')
+        self.assertEqual(json_response['cookTime'], '50')
+        self.assertEqual(json_response['recipeInstructions'], 'Test recipeInstructions')
+        self.assertEqual(json_response['recipeInstructions_html'], '<p>Test recipeInstructions</p>')
+        json_post = json_response
 
-    #     # display the posts by the specific user
-    #     response = self.client.get(f"/api/v1/user_posts/{u.id}", headers=self.get_api_headers('sue@example.com', 'foam'))
-    #     self.assertEqual(response.status_code, 200)
-    #     json_response = json.loads(response.get_data(as_text=True))
-    #     self.assertIsNotNone(json_response.get('posts'))
-    #     self.assertEqual(json_response.get('count', 0), 1)
-    #     self.assertEqual(json_response['posts'][0], json_post)
+        # display the posts by the specific user
+        u1 = User.query.filter_by(email='sue@example.com').first()
+        response = self.client.get(f"/api/v1/user_posts/{u1.id}", headers=access_headers_u1)
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertIsNotNone(json_response.get('posts'))
+        self.assertEqual(json_response.get('count', 0), 1)
+        self.assertEqual(json_response['posts'][0], json_post)
 
-    #     # get the posts from the followed user
-    #     response = self.client.get(f'/api/v1/user_account/{u2.id}/followed_posts',
-    #                                headers=self.get_api_headers('sue@example.com', 'foam'))
-    #     self.assertEqual(response.status_code, 200)
-    #     json_response = json.loads(response.get_data(as_text=True))
-    #     self.assertIsNotNone(json_response.get('posts'))
-    #     self.assertEqual(json_response.get('count', 0), 1)
-    #     self.assertEqual(json_response['posts'][0], json_post)
+        # log in second user
+        response = self.client.post(f'/api/v1/login',\
+                                    headers=self.get_api_headers('ramie@example.com', 'dentas'),\
+                                    data=json.dumps({'email': 'ramie@example.com', 'password': 'dentas'}))
+        self.assertEqual(response.status_code, 200)
+        token_data_u2 = response.get_json('access_token')
+        self.assertTrue('access_token' in token_data_u1)
+        access_token_u2 = token_data_u2['access_token']
+        self.assertIsNotNone(access_token_u2)
+        access_headers_u2 = {'Authorization': 'Bearer {}'.format(access_token_u2)}
+        self.assertNotEqual(access_headers_u1 , access_headers_u2)
 
-    #     # test of editing posts by the user, which created the post
-    #     post = Post.query.order_by(Post.date_posted.desc()).first()
-    #     response = self.client.put(f'/api/v1/posts/{post.id}',
-    #                                headers=self.get_api_headers('sue@example.com', 'foam'),
-    #                                data=json.dumps({'name': 'Updated Test recipe #1',
-    #                                                 'description': 'Test description to the Test Title',
-    #                                                 'image': 'default.jpg', 'portions': 6, 'recipeYield': '12 pieces',
-    #                                                 'cookTime': '50', 'prepTime': 45, 'ready': 135,
-    #                                                 'recipeCategory': 'meat', 'main_ingredient': 'beef',
-    #                                                 'recipeIngredient': 'test post.recipeIngredient',
-    #                                                 'recipeInstructions': 'Test recipeInstructions'
-    #                                                 }))
-    #     self.assertEqual(response.status_code, 200)
-    #     json_response = json.loads(response.get_data(as_text=True))
-    #     self.assertEqual('http://localhost' + json_response['url'], url)
-    #     self.assertEqual(json_response['name'], 'Updated Test recipe #1')
+        # follow user_1 by user_2
+        u2 = User.query.filter_by(email='ramie@example.com').first()
+        u2.follow_user(u1)
+      
+        # get the posts from the followed user
+        response = self.client.get(f'/api/v1/user_account/{u2.id}/followed_posts',
+                                   headers=access_headers_u2)
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertIsNotNone(json_response.get('posts'))
+        self.assertEqual(json_response.get('count', 0), 1)
+        self.assertEqual(json_response['posts'][0], json_post)
+
+        # test of editing posts by the user, which has not created the post
+        eddited_post = Post.query.order_by(Post.date_posted.desc()).first()
+        response = self.client.put(f'/api/v1/post/{eddited_post.id}',
+                                   headers=access_headers_u2,
+                                   data=json.dumps({'name': 'Updated Test recipe #1',
+                                                    'description': 'Test description to the Test Title',
+                                                    'image': 'default.jpg', 'portions': 6, 'recipeYield': '12 pieces',
+                                                    'cookTime': '50', 'prepTime': 45, 'ready': 135,
+                                                    'recipeCategory': 'meat', 'main_ingredient': 'beef',
+                                                    'recipeIngredient': 'test post.recipeIngredient',
+                                                    'recipeInstructions': 'Test recipeInstructions'
+                                                    }))
+        self.assertEqual(response.status_code, 403)
+
+        # test of editing posts by the user, which has did created the post
+        eddited_post = Post.query.order_by(Post.date_posted.desc()).first()
+        response = self.client.put(f'/api/v1/post/{eddited_post.id}',
+                                   headers=access_headers_u1,
+                                   data=json.dumps({'name': 'Updated Test recipe #1',
+                                                    'description': 'Test description to the Test Title',
+                                                    'image': 'default.jpg', 'portions': 6, 'recipeYield': '12 pieces',
+                                                    'cookTime': '30', 'prepTime': 45, 'ready': 135,
+                                                    'recipeCategory': 'meat', 'main_ingredient': 'beef',
+                                                    'recipeIngredient': 'Updated ingredients',
+                                                    'recipeInstructions': 'Test recipeInstructions'
+                                                    }))
+        self.assertEqual(response.status_code, 201)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertEqual('http://localhost' + json_response['url'], post_url)
+        self.assertEqual(json_response['name'], 'Updated Test recipe #1')
+        self.assertEqual(json_response['cookTime'], '30')
+        self.assertEqual(json_response['recipeIngredient'], 'Updated ingredients')
+        self.assertEqual(json_response['recipeIngredient_html'], '<p>Updated ingredients</p>')
 
         
     # # test users API response

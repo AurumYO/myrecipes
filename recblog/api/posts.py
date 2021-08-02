@@ -1,5 +1,6 @@
 from flask import jsonify, request, url_for, g, current_app, flash
 from flask_jwt_extended import jwt_required, get_jwt_identity
+import ast
 from .. import db
 from ..models import User, Post, Permission, FavoritePosts
 from . import api
@@ -40,15 +41,20 @@ def get_post(post_id):
 @jwt_required()
 @permission_required(Permission.WRITE)
 def get_new_post():
-    new_post = request.get_json() or {}
+    new_post = request.get_data()
+    new_post = ast.literal_eval(new_post.decode("UTF-8"))
     # perform check if post has all obligatory fields
-    required_fileds = set(['name', 'description', 'portions', 'cookTime', 'recipeCategory',\
-                           'recipeIngredient', 'recipeInstructions'])
-    # if some filelds datais missing, report on missing data
-    if set(new_post.keys()) != required_fileds:
-            missing_parametrs = required_fileds - set(new_post.keys())
-            output_params = ' '.join(str(x + ', ') for x in missing_parametrs)
-            return bad_request("Post must have following parameters: {} please check your input data.".format(output_params))
+    required_fileds = ['name', 'description', 'portions', 'cookTime', 'recipeCategory',\
+                           'recipeIngredient', 'recipeInstructions']
+    # check if some required filelds datais missing, report on missing data
+    missing_parametrs = []
+    for k in required_fileds:
+        if k not in set(new_post.keys()):
+            missing_parametrs.append(k)
+    if len(missing_parametrs) > 0:
+        output_params = ' '.join(str(x + ', ') for x in missing_parametrs)
+        return bad_request("Post must have following parameters: {} please check your input data.".format(output_params))
+    # check compleated, all is fine save the post
     post = Post()
     post = Post.convert_post_from_json(new_post)
     current_user = User.query.filter_by(email=get_jwt_identity()).first()
@@ -65,25 +71,27 @@ def get_new_post():
 @jwt_required()
 @permission_required(Permission.WRITE)
 def update_post(post_id):
-    post = Post.query.get_or_404(post_id)
+    post = Post.query.filter_by(id=post_id).first()
+    new_post_data = request.get_data()
+    new_post_data = ast.literal_eval(new_post_data.decode("UTF-8"))
     current_user = User.query.filter_by(email=get_jwt_identity()).first()
     if current_user != post.author or not current_user.can(Permission.ADMIN):
         return forbidden('Insufficient permission rights. You cannot edit this post.')
     # obtain new values of the posts fields
     # !!TODO: optimize new values assigning
-    post.title = request.json.get('name', post.title)
-    post.description = request.json.get('description', post.description)
+    post.title = new_post_data['name'] if new_post_data['name'] else post.title
+    post.description = new_post_data['description'] if new_post_data['name'] else post.description
     # in 2021 release to improve update of the new pictures instead of existing
-    post.post_image = request.json.get('image', post.post_image)
-    post.portions = request.json.get('portions', post.portions)
-    post.recipe_yield = request.json.get('recipeYield', post.recipe_yield)
-    post.cook_time = request.json.get('cookTime', post.cook_time)
-    post.prep_time = request.json.get('prepTime', post.prep_time)
-    post.ready = request.json.get('ready', post.ready)
-    post.type_category = request.json.get('recipeCategory', post.type_category)
-    post.main_ingredient = request.json.get('main_ingredient', post.main_ingredient)
-    post.ingredients = request.json.get('recipeIngredient', post.ingredients)
-    post.preparation = request.json.get('recipeInstructions', post.preparation)
+    post.post_image = new_post_data['image'] if new_post_data['image'] else post.post_image
+    post.portions = new_post_data['portions'] if new_post_data['portions'] else post.portions
+    post.recipe_yield = new_post_data['recipeYield'] if new_post_data['recipeYield'] else post.recipe_yield
+    post.cook_time = new_post_data['cookTime'] if new_post_data['cookTime']  else post.cook_time
+    post.prep_time = new_post_data['prepTime'] if new_post_data['prepTime'] else post.prep_time
+    post.ready = new_post_data['ready'] if new_post_data['ready'] else post.ready
+    post.type_category = new_post_data['recipeCategory'] if new_post_data['recipeCategory'] else post.type_category
+    post.main_ingredient = new_post_data['main_ingredient'] if new_post_data['main_ingredient'] else post.main_ingredient
+    post.ingredients = new_post_data['recipeIngredient'] if new_post_data['recipeIngredient'] else post.main_ingredient
+    post.preparation = new_post_data['recipeInstructions'] if new_post_data['recipeInstructions'] else post.preparation
     # save updated values of the post fields to the database
     db.session.commit()
     # return updated post
