@@ -20,7 +20,7 @@ def check_if_token_revoked(jwt_header, jwt_payload):
 def get_user(user_id):
     current_user = get_jwt_identity()
     user = User.query.get_or_404(user_id)
-    return jsonify(logged_in_as=current_user, user=user.convert_user_json()), 200
+    return jsonify(user.convert_user_json()), 200
 
 
 @api.route('/users/', methods=["GET", "POST"])

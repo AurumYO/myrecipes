@@ -1,3 +1,4 @@
+import ast
 from flask import jsonify, request, current_app, url_for, g
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from .. import db
@@ -61,8 +62,11 @@ def get_post_comment(post_id):
 @permission_required(Permission.WRITE)
 @permission_required(Permission.COMMENT)
 def new_comment_to_post(post_id):
-    new_comment = request.get_json() or {}
+    new_comment = request.get_data() or {}
+    new_comment = ast.literal_eval(new_comment.decode("UTF-8"))
     new_comment['author_id'] = User.query.filter_by(email=get_jwt_identity()).first().id
+    new_comment['post_id'] = post_id
+    new_comment['disabled'] = False
     comment = Comment()
     comment.convert_from_json_comment(new_comment)
     db.session.add(comment)
@@ -78,10 +82,11 @@ def new_comment_to_post(post_id):
 @permission_required(Permission.WRITE)
 @permission_required(Permission.COMMENT)
 def update_comment(comment_id):
-    updated_comment = request.get_json() or {}
+    updated_comment = request.get_data() or {}
+    updated_comment = ast.literal_eval(updated_comment.decode("UTF-8"))
+    # updated_comment = ast.literal_eval(updated_comment.decode("UTF-8"))
     comment = Comment.query.filter_by(id=comment_id).first()
     current_user = User.query.filter_by(email=get_jwt_identity()).first()
-    print(comment.author, current_user)
     if current_user != comment.author and not current_user.can(Permission.MODERATE)\
             or current_user != comment.author and not current_user.can(Permission.ADMIN):
         return forbidden("You have no permission to change this comment!")

@@ -170,7 +170,7 @@ class APITestCase(unittest.TestCase):
 
     # testing post creation from registerred user with permission to create posts
     def test_posts(self):
-        # create test users with role User and user instance 'u2' should be following user instance 'u'
+        # create test users with role User and user instance 'u2' should be following user instance 'u1'
         response = self.client.post(f'/api/v1/new_user/',\
              headers=self.get_api_headers('sue@example.com', 'foam'),\
              data=json.dumps({'username': 'Suesan', 'email': 'sue@example.com',\
@@ -235,7 +235,7 @@ class APITestCase(unittest.TestCase):
                                     data=json.dumps({'email': 'ramie@example.com', 'password': 'dentas'}))
         self.assertEqual(response.status_code, 200)
         token_data_u2 = response.get_json('access_token')
-        self.assertTrue('access_token' in token_data_u1)
+        self.assertTrue('access_token' in token_data_u2)
         access_token_u2 = token_data_u2['access_token']
         self.assertIsNotNone(access_token_u2)
         access_headers_u2 = {'Authorization': 'Bearer {}'.format(access_token_u2)}
@@ -289,95 +289,137 @@ class APITestCase(unittest.TestCase):
         self.assertEqual(json_response['recipeIngredient_html'], '<p>Updated ingredients</p>')
 
         
-    # # test users API response
-    # def test_users(self):
-    #     # add test users to database
-    #     response1 = self.client.post(f'/api/v1/new_user/',\
-    #          headers=self.get_api_headers('sue@example.com', 'foam'),\
-    #          data=json.dumps({'username': 'Suesan', 'email': 'sue@example.com',\
-    #               'password': 'foam', 'about_me': 'JM', 'location': 'Here'}))
-    #     self.assertEqual(response1.status_code, 200)
-    #     response2 = self.client.post(f'/api/v1/new_user/',\
-    #          headers=self.get_api_headers('sam@example.com', 'sand'),\
-    #          data=json.dumps({'username': 'Sam', 'email': 'sam@example.com',\
-    #               'password': 'sand', 'about_me': 'JSM', 'location': 'There'}))
-    #     self.assertEqual(response2.status_code, 200)
+    # test users API response
+    def test_users(self):
+        # add test users to database
+        response = self.client.post(f'/api/v1/new_user/',\
+             headers=self.get_api_headers('sue@example.com', 'foam'),\
+             data=json.dumps({'username': 'Suesan', 'email': 'sue@example.com',\
+                  'password': 'foam', 'about_me': 'JM', 'location': 'Here'}))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(f'/api/v1/new_user/',\
+             headers=self.get_api_headers('ramie@example.com', 'dentas'),\
+             data=json.dumps({'username': 'Ramie', 'email': 'ramie@example.com',\
+                  'password': 'dentas', 'about_me': 'RM-JM', 'location': 'Kyiv'}))
+        self.assertEqual(response.status_code, 200)
         
-    #     # query the users in database
-    #     u1 = User.query.filter_by(username='Suesan').first()
-    #     u2 = User.query.filter_by(username='Sam').first()
+        # query the users in database
+        u1 = User.query.filter_by(username='Suesan').first()
+        u2 = User.query.filter_by(username='Ramie').first()
+        self.assertIsNotNone(u1)
+        self.assertIsNotNone(u1)
 
-    #     # get user info from database by another registered user
-    #     response = self.client.get(f'/api/v1/user_account/{u1.id}',
-    #                                headers=self.get_api_headers('sue@example.com', 'foam'))
-    #     self.assertEqual(response.status_code, 200)
-    #     json_response = json.loads(response.get_data(as_text=True))
-    #     self.assertEqual(json_response['username'], 'Suesan')
-    #     response = self.client.get(f'/api/v1/user_account/{u2.id}',
-    #                                headers=self.get_api_headers('sam@example.com', 'sand'))
-    #     self.assertEqual(response.status_code, 200)
-    #     json_response = json.loads(response.get_data(as_text=True))
-    #     self.assertEqual(json_response['username'], 'Sam')
-    #     self.assertEqual(json_response['location'], 'There')
+        # log in user_2 and get authentication token
+        response = self.client.post(f'/api/v1/login',\
+                                    headers=self.get_api_headers('ramie@example.com', 'dentas'),\
+                                    data=json.dumps({'email': 'ramie@example.com', 'password': 'dentas'}))
+        self.assertEqual(response.status_code, 200)
+        token_data_u2 = response.get_json('access_token')
+        access_token_u2 = token_data_u2['access_token']
+        access_headers_u2 = {'Authorization': 'Bearer {}'.format(access_token_u2)}
+        self.assertIsNotNone(access_headers_u2)
 
-    #     # test get by user info on own profile information
+        # get user info from database by another registered user
+        response = self.client.get(f'/api/v1/user_account/{u1.id}',
+                                   headers=access_headers_u2)
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertEqual(json_response['username'], 'Suesan')
+        self.assertEqual(json_response['location'], 'Here')
 
-    # # test users comments
-    # def test_comments(self):
-    #     # register three users with User role
-    #     rl = Role.query.filter_by(name='User').first()
-    #     self.assertIsNotNone(rl)
-    #     u1 = User(username='Suesan', email='sue@example.com', password=bcrypt.generate_password_hash('foam'),
-    #             confirmed=True, role=rl)
-    #     u2 = User(username='Sam', email='sam@example.com', password=bcrypt.generate_password_hash('sand'),
-    #               confirmed=True, role=rl, location='Kyiv')
-    #     u3 = User( username='Weisly', email='weisly@example.com', password=bcrypt.generate_password_hash('monarch'),
-    #                confirmed=True, role=rl)
-    #     db.session.add_all([u1, u2, u3])
-    #     db.session.commit()
+        # test get by user info on own profile information
+        response = self.client.get(f'/api/v1/user_account/{u2.id}',\
+            headers=access_headers_u2)
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertEqual(json_response['username'], 'Ramie')
+        self.assertEqual(json_response['location'], 'Kyiv')
 
-    #     # write a post to database by u1
-    #     post = Post(title='Test recipe #2', description='Test description to the Comments test',
-    #                 post_image='default.jpg', portions=6, recipe_yield=12, cook_time=25, prep_time=45, ready=70,
-    #                 type_category='meat', main_ingredient='vegetables', ingredients='test  comments - post.ingredients',
-    #                 preparation='Test API Comments section preparation', author=u1)
-    #     db.session.add(post)
-    #     db.session.commit()
+    # test users comments
+    def test_comments(self):
+        # register three users with User role
+        response = self.client.post(f'/api/v1/new_user/',\
+             headers=self.get_api_headers('sue@example.com', 'foam'),\
+             data=json.dumps({'username': 'Suesan', 'email': 'sue@example.com',\
+                  'password': 'foam', 'about_me': 'JM', 'location': 'Here'}))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(f'/api/v1/new_user/',\
+             headers=self.get_api_headers('ramie@example.com', 'dentas'),\
+             data=json.dumps({'username': 'Ramie', 'email': 'ramie@example.com',\
+                  'password': 'dentas', 'about_me': 'RM-JM', 'location': 'Kyiv'}))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(f'/api/v1/new_user/',\
+             headers=self.get_api_headers('weisly@example.com', 'dentas'),\
+             data=json.dumps({'username': 'Weslie', 'email': 'wesliy@example.com',\
+                  'password': 'sand', 'about_me': 'Lazy', 'location': 'KPGH'}))
+        self.assertEqual(response.status_code, 200)
 
-    #     # write a new comment to the post
-    #     response = self.client.post(f'/api/v1/post/{post.id}/comments',
-    #                                 headers=self.get_api_headers('sam@example.com', 'sand'),
-    #                                 data=json.dumps({'body': 'Very nice post. by sue@example.com from Sam'}))
-    #     self.assertEqual(response.status_code, 201)
-    #     json_response = json.loads(response.get_data(as_text=True))
-    #     url = response.headers.get('Location')
-    #     self.assertIsNotNone(url)
-    #     self.assertEqual(json_response['body'], 'Very nice post. by sue@example.com from Sam')
-    #     self.assertEqual(re.sub('<p>', '', json_response['body_html']), 'Very nice post. by sue@example.com from Sam</p>')
+        # write a post to database by u1
+        u1 = User.query.filter_by(email='sue@example.com').first()
+        post = Post(title='Test recipe #2', description='Test description to the Comments test',
+                    post_image='default.jpg', portions=6, recipe_yield=12, cook_time=25, prep_time=45, ready=70,
+                    type_category='meat', main_ingredient='vegetables', ingredients='test  comments - post.ingredients',
+                    preparation='Test API Comments section preparation', author=u1)
+        db.session.add(post)
+        db.session.commit()
 
-    #     # get new comment for display
-    #     response = self.client.get(url, headers=self.get_api_headers('weisly@example.com', 'monarch'))
-    #     self.assertEqual(response.status_code, 200)
-    #     json_response = json.loads(response.get_data(as_text=True))
-    #     self.assertEqual('http://localhost' + json_response['url'], url)
-    #     self.assertEqual(json_response['body'], 'Very nice post. by sue@example.com from Sam')
+        # login user_2 and write a new comment to the post
+        response = self.client.post(f'/api/v1/login',\
+                                    headers=self.get_api_headers('ramie@example.com', 'dentas'),\
+                                    data=json.dumps({'email': 'ramie@example.com', 'password': 'dentas'}))
+        self.assertEqual(response.status_code, 200)
+        token_data_u2 = response.get_json('access_token')
+        access_token_u2 = token_data_u2['access_token']
+        access_headers_u2 = {'Authorization': 'Bearer {}'.format(access_token_u2)}
+        self.assertIsNotNone(access_headers_u2)
+        response = self.client.post(f"/api/v1/post/{post.id}/comments/", headers=access_headers_u2,\
+            data=json.dumps({'body': 'Very nice post Sue. By ramie@example.com'}))
+        self.assertEqual(response.status_code, 201)
+        json_response = json.loads(response.get_data(as_text=True))
+        comment_url = response.headers.get('Location')
+        self.assertIsNotNone(comment_url)
+        self.assertEqual(json_response['body'], 'Very nice post Sue. By ramie@example.com')
+        self.assertEqual(json_response['body_html'], '<p>Very nice post Sue. By ramie@example.com</p>')
 
-    #     # add another comment by user3 directly to database
-    #     new_comment = Comment(body='Yes, I need to do he same', author=u3, post=post)
-    #     db.session.add(new_comment)
-    #     db.session.commit()
 
-    #     # get all comments to a new post by post.id by the registered confirmed user
-    #     response = self.client.get(f'/api/v1/post/{post.id}/comments/',
-    #                                headers=self.get_api_headers('sue@example.com', 'foam'))
-    #     self.assertEqual(response.status_code, 200)
-    #     json_response = json.loads(response.get_data(as_text=True))
-    #     self.assertIsNotNone(json_response.get('comment'))
-    #     self.assertEqual(json_response.get('count', 0), 2)
 
-    #     # fail post comment by unregistered user
-    #     response = self.client.post( f'/api/v1/post/{post.id}/comments',
-    #                                  headers=self.get_api_headers('sam@gmail.com', 'sand'),
-    #                                  data=json.dumps({'body': 'I am not registered but want to comment'}))
-    #     self.assertEqual(response.status_code, 401)
+        # get new comment for display
+        response = self.client.get(comment_url, headers=access_headers_u2)
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertEqual('http://localhost' + json_response['url'], comment_url)
+        self.assertEqual(json_response['body'], 'Very nice post Sue. By ramie@example.com')
+
+        # modify the comment by its author
+        comment = Comment.query.filter_by(author_id=2).first()
+        response = self.client.put(f"/api/v1/comment/{comment.id}", headers=access_headers_u2,\
+                                    data=json.dumps({'body': 'Update not a nice post Sue. By ramie@example.com'}))
+        self.assertEqual(response.status_code, 200)
+        # check thad modifications of the comment have been saved to database
+        response = self.client.get(comment_url, headers=access_headers_u2)
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertEqual(json_response['body'], 'Update not a nice post Sue. By ramie@example.com')
+        self.assertEqual(json_response['body_html'], '<p>Update not a nice post Sue. By ramie@example.com</p>')
+
+
+        # add another comment by user3 directly to database
+        u3 = User.query.filter_by(email='wesliy@example.com').first()
+        new_comment = Comment(body='Yes, I need to do he same', author=u3, post=post)
+        db.session.add(new_comment)
+        db.session.commit()
+
+        # get all comments to a new post by post.id by the registered confirmed user
+        response = self.client.get(f"/api/v1/post/{post.id}/comments/",\
+                                   headers=access_headers_u2)
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertIsNotNone(json_response.get('comment'))
+        self.assertEqual(json_response.get('count', 0), 2)
+
+        # fail post comment by unregistered user
+        response = self.client.post(f"/api/v1/post/{post.id}/comments/",\
+                                    headers=self.get_api_headers('sam@gmail.com', 'sand'),\
+                                    data=json.dumps({'body': 'Very nice post Sue. By ramie@example.com'}))
+        self.assertEqual(response.status_code, 401)
 
