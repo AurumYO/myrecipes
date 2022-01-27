@@ -2,29 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="221da591-04c9-46d1-b7fb-9b951be1e2ed" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data.sqlite" beforeDir="false" afterPath="$PROJECT_DIR$/data.sqlite" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/content_management/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/content_management/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/main/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/main/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/posts/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/posts/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/posts/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/posts/utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/static/main.css" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/static/main.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/static/post_pictures/3c786355e76bc525.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/static/post_pictures/default.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/templates/about.html" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/templates/about.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/templates/admin/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/templates/admin/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/templates/home.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/templates/layout.html" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/templates/layout.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/templates/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/templates/login.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/templates/post.html" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/templates/post.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/templates/recent_recipes.html" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/templates/recent_recipes.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/templates/register.html" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/templates/register.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/users/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/users/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recblog/users/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/users/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/recblog/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/recblog/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -62,7 +41,7 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../навчання ІТ/python_tricks_buffet" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../навчання ІТ/conc_web_scrap/ch11" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.path.for.package.eslint" value="project" />
